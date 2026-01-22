@@ -222,6 +222,64 @@ The orchestrator MUST automatically select:
    - "detailed", "enriched", "verified"
    - B2B lead generation tasks
 
+3. **Browser Extension** for authenticated data:
+   - Google Ads performance (when logged in)
+   - Google Analytics data (when logged in)
+   - LinkedIn analytics and actions
+   - Any web scraping or browser automation
+
+---
+
+## Browser Extension Capabilities
+
+**The 10x.in Browser Extension handles automation WITHOUT requiring external MCPs.**
+
+### Data Fetching (Authenticated)
+| Platform | Capability | How |
+|----------|------------|-----|
+| Google Ads | Campaign performance, metrics | `FETCH_GOOGLE_ADS` message |
+| Google Analytics | GA4 dashboard data | `FETCH_GOOGLE_ANALYTICS` message |
+| LinkedIn | Profile analytics, search | `FETCH_LINKEDIN_ANALYTICS` message |
+
+### Browser Automation
+| Action | Command | Description |
+|--------|---------|-------------|
+| Navigate | `NAVIGATE` | Go to any URL |
+| Click | `CLICK` | Click elements by selector |
+| Type | `TYPE` | Type text with optional humanization |
+| Scrape | `SCRAPE` | Extract data from page |
+| Screenshot | `SCREENSHOT` | Capture visible tab |
+| Full Page | `FULL_PAGE_SCREENSHOT` | Capture entire scrollable page |
+
+### Logging & Audit
+
+**All browser extension actions are logged for debugging and auditing.**
+
+```javascript
+// Get logs
+chrome.runtime.sendMessage({ type: 'GET_LOGS', filters: { level: 'ACTION' } });
+
+// Export logs as JSON
+chrome.runtime.sendMessage({ type: 'EXPORT_LOGS', filters: { startDate: '2024-01-01' } });
+
+// Clear old logs
+chrome.runtime.sendMessage({ type: 'CLEAR_LOGS' });
+```
+
+Log categories: `MCP`, `SKILL`, `BROWSER`, `WEBSOCKET`, `COMMAND`, `INIT`, `DATA_FETCH`
+
+### When to Use Browser Extension vs MCP
+
+| Task | Use | Reason |
+|------|-----|--------|
+| Quick web search | Exa MCP | Fast API response |
+| Prospect discovery | Websets MCP | Comprehensive lists |
+| Google Ads data | Browser Extension | Requires login |
+| GA4 analytics | Browser Extension | Requires login |
+| LinkedIn scraping | Browser Extension | Requires login |
+| General web scraping | Browser Extension | Direct page access |
+| Screenshots | Browser Extension | Browser API |
+
 ---
 
 ## Skill Categories

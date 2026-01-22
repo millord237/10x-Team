@@ -1,4 +1,8 @@
 {
+  "$schema": "https://10x.in/schemas/mcp-config.json",
+  "_comment": "MCP Server Configuration for 10x Team - Copy to .mcp.json and add API keys",
+  "_developed_by": "Team 10x.in",
+
   "mcpServers": {
     "exa": {
       "command": "npx",
@@ -6,43 +10,80 @@
       "env": {
         "EXA_API_KEY": "${EXA_API_KEY}"
       },
-      "description": "Exa AI web search, LinkedIn search, company research - https://github.com/exa-labs/exa-mcp-server"
+      "description": "REQUIRED: Exa AI - Quick web search, LinkedIn lookups, company research",
+      "priority": "required",
+      "use_for": "Quick searches (<10 results), exploratory research, company info"
     },
+
     "websets": {
       "command": "npx",
       "args": ["-y", "websets-mcp-server"],
       "env": {
         "EXA_API_KEY": "${EXA_API_KEY}"
       },
-      "description": "Exa Websets for prospect lists, B2B lead generation, deep research - https://github.com/exa-labs/websets-mcp-server"
+      "description": "REQUIRED: Websets - Exhaustive prospect lists, B2B lead generation, deep research",
+      "priority": "required",
+      "use_for": "Deep research (>=10 results), prospect lists, enriched leads, campaign data"
     },
+
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"],
       "env": {
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       },
-      "description": "Context7 for documentation search"
+      "description": "RECOMMENDED: Documentation search and technical references",
+      "priority": "recommended"
     },
-    "chrome-devtools": {
-      "command": "npx",
-      "args": ["-y", "chrome-devtools-mcp@latest"],
-      "description": "Chrome DevTools for browser debugging (optional - browser extension handles most automation)"
-    },
+
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
-      "description": "Sequential thinking for complex reasoning tasks"
+      "description": "RECOMMENDED: Extended thinking for complex multi-step reasoning",
+      "priority": "recommended"
     },
+
     "memory": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "description": "Persistent memory using knowledge graphs"
+      "description": "OPTIONAL: Persistent memory using knowledge graphs",
+      "priority": "optional"
     },
+
     "fetch": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-fetch"],
-      "description": "Web page fetching and content extraction"
+      "description": "OPTIONAL: Web page fetching (browser extension can also do this)",
+      "priority": "optional",
+      "browser_extension_alternative": true
+    },
+
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"],
+      "description": "OPTIONAL: Chrome DevTools debugging (browser extension handles automation)",
+      "priority": "optional",
+      "browser_extension_alternative": true
     }
+  },
+
+  "_browser_extension_capabilities": {
+    "_note": "The 10x.in Browser Extension can handle these WITHOUT needing MCPs:",
+    "navigation": "Navigate to URLs, click elements, type text",
+    "scraping": "Scrape page data, extract content",
+    "screenshots": "Capture visible tab or full page screenshots",
+    "google_ads": "Fetch Google Ads performance when logged in",
+    "google_analytics": "Fetch GA4 data when logged in",
+    "linkedin": "LinkedIn profile scraping, analytics, outreach actions",
+    "twitter": "Twitter/X actions and data fetching",
+    "instagram": "Instagram actions and data fetching",
+    "logging": "All actions logged to IndexedDB for audit/debug"
+  },
+
+  "_mcp_selection_rules": {
+    "quick_search": "Use Exa MCP for <10 results or exploratory",
+    "deep_research": "Use Websets MCP for >=10 results or comprehensive lists",
+    "authenticated_data": "Use Browser Extension for Google Ads, GA4, LinkedIn analytics",
+    "web_scraping": "Use Browser Extension for general web scraping"
   }
 }

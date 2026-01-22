@@ -67,6 +67,20 @@
           "pre-tool-output",
           "pre-tool-instructions"
         ]
+      },
+      {
+        "name": "tool-display",
+        "file": "tool-display.cjs",
+        "description": "Provides user-friendly tool names for better UX",
+        "priority": 2,
+        "enabled": true,
+        "outputs": [
+          "displayName",
+          "fullDisplay",
+          "icon",
+          "skill",
+          "mcp"
+        ]
       }
     ],
 
