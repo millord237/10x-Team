@@ -6,7 +6,15 @@
       "env": {
         "EXA_API_KEY": "${EXA_API_KEY}"
       },
-      "description": "Exa AI web search and research - https://github.com/exa-labs/exa-mcp-server"
+      "description": "Exa AI web search, LinkedIn search, company research - https://github.com/exa-labs/exa-mcp-server"
+    },
+    "websets": {
+      "command": "npx",
+      "args": ["-y", "websets-mcp-server"],
+      "env": {
+        "EXA_API_KEY": "${EXA_API_KEY}"
+      },
+      "description": "Exa Websets for prospect lists, B2B lead generation, deep research - https://github.com/exa-labs/websets-mcp-server"
     },
     "context7": {
       "command": "npx",
@@ -19,7 +27,7 @@
     "chrome-devtools": {
       "command": "npx",
       "args": ["-y", "chrome-devtools-mcp@latest"],
-      "description": "Chrome DevTools for browser debugging and automation"
+      "description": "Chrome DevTools for browser debugging (optional - browser extension handles most automation)"
     },
     "sequential-thinking": {
       "command": "npx",
@@ -30,11 +38,6 @@
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
       "description": "Persistent memory using knowledge graphs"
-    },
-    "fetch": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"],
-      "description": "Web page fetching and content extraction"
     }
   }
 }
