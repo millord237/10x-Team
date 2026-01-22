@@ -1,0 +1,33 @@
+{
+  "services": {
+    "marketing-dashboard": {
+      "name": "Marketing Dashboard",
+      "port": 3000,
+      "description": "Vue 3 campaign management dashboard",
+      "path": ".claude/skills/marketing-dashboard",
+      "start": "./start.sh"
+    },
+    "tldraw-canvas": {
+      "name": "TLDraw Canvas",
+      "port": 3001,
+      "description": "Visual workflow designer for outreach",
+      "path": "canvas",
+      "start": "npm run dev"
+    },
+    "websocket-server": {
+      "name": "WebSocket Server",
+      "port": 3002,
+      "description": "Outreach automation WebSocket server",
+      "path": "canvas",
+      "start": "node server.js"
+    },
+    "api-server": {
+      "name": "API Server",
+      "port": 3003,
+      "description": "Backend API services",
+      "path": ".claude/skills/marketing-dashboard/backend",
+      "start": "npm run start"
+    }
+  },
+  "developed_by": "Team 10x.in"
+}

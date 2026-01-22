@@ -1,0 +1,12 @@
+# 10x Team Ignore File
+# Patterns listed here will be blocked by the scout-block hook
+# Syntax similar to .gitignore - one pattern per line
+# Lines starting with # are comments
+# Developed by Team 10x.in
+
+# Default patterns
+node_modules
+__pycache__
+.git
+dist
+build

@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "name": "10x-team",
+  "description": "AI-powered marketing, outreach, and automation toolkit developed by 10x.in - content creation, campaign management, landing pages, multi-platform outreach, and browser automation.",
+  "buildDate": "2026-01-23T00:00:00.000Z",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anit-1to10x/10x-Team.git"
+  },
+  "author": "Team 10x.in",
+  "download": {
+    "lastDownloadedAt": null,
+    "downloadedBy": null,
+    "installCount": 0
+  }
+}
