@@ -1,0 +1,109 @@
+{
+  "hero": {
+    "headline": "Know Which Users Will Churn Before They Do",
+    "subheadline": "FlowMetrics gives SaaS teams automatic churn prediction, feature analytics, and actionable insights - without writing a single line of code.",
+    "cta_primary": "Start Free Trial",
+    "cta_secondary": "Watch Demo",
+    "social_proof": "Trusted by 500+ SaaS teams"
+  },
+  "problem": {
+    "headline": "You're Flying Blind on User Behavior",
+    "points": [
+      "Users churn and you only find out when they cancel",
+      "You have data everywhere but insights nowhere",
+      "Your 'analytics' is a mess of spreadsheets and SQL queries",
+      "You can't answer simple questions without bugging engineering"
+    ]
+  },
+  "solution": {
+    "headline": "Finally, Analytics That Actually Helps You Grow",
+    "features": [
+      {
+        "title": "Churn Prediction",
+        "description": "Know which users are at risk 2 weeks before they leave. Get automatic alerts and suggested actions."
+      },
+      {
+        "title": "Feature Analytics",
+        "description": "See which features drive retention and which ones users ignore. Make data-driven roadmap decisions."
+      },
+      {
+        "title": "Engagement Scoring",
+        "description": "Automatic health scores for every user. Prioritize outreach to accounts that matter."
+      },
+      {
+        "title": "Zero-Code Setup",
+        "description": "Copy-paste our snippet and start getting insights in 5 minutes. No engineering required."
+      }
+    ]
+  },
+  "social_proof": {
+    "headline": "SaaS Teams Love FlowMetrics",
+    "testimonials": [
+      {
+        "quote": "We identified 23 at-risk accounts last month and saved $47K in ARR. FlowMetrics paid for itself in week one.",
+        "author": "Mike Chen",
+        "title": "Founder, DataSync",
+        "metric": "34% less churn"
+      },
+      {
+        "quote": "Finally, I can answer 'which features matter?' without waiting 2 weeks for a data team report.",
+        "author": "Sarah Kim",
+        "title": "Product Lead, Acme SaaS",
+        "metric": "10 hrs/week saved"
+      },
+      {
+        "quote": "Setup took 5 minutes. First insight came in 24 hours. This is how analytics should work.",
+        "author": "James Wright",
+        "title": "CEO, GrowthStack",
+        "metric": "5-min setup"
+      }
+    ]
+  },
+  "pricing": {
+    "headline": "Simple Pricing, Serious Results",
+    "plans": [
+      {
+        "name": "Starter",
+        "price": "$49/mo",
+        "description": "For early-stage startups",
+        "features": [
+          "Up to 1K MAU",
+          "Churn prediction",
+          "Basic dashboards",
+          "Email support"
+        ]
+      },
+      {
+        "name": "Growth",
+        "price": "$149/mo",
+        "description": "For scaling teams",
+        "features": [
+          "Up to 10K MAU",
+          "Everything in Starter",
+          "Feature analytics",
+          "Slack alerts",
+          "Priority support"
+        ],
+        "popular": true
+      },
+      {
+        "name": "Enterprise",
+        "price": "$399/mo",
+        "description": "For larger organizations",
+        "features": [
+          "Unlimited MAU",
+          "Everything in Growth",
+          "Custom dashboards",
+          "API access",
+          "Dedicated CSM"
+        ]
+      }
+    ]
+  },
+  "cta_final": {
+    "headline": "Stop Guessing. Start Growing.",
+    "subheadline": "Join 500+ SaaS teams using FlowMetrics to reduce churn and increase retention.",
+    "cta": "Start Your Free Trial",
+    "guarantee": "14-day free trial. No credit card required."
+  }
+}

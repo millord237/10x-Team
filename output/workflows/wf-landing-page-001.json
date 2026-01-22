@@ -1,0 +1,81 @@
+{
+  "id": "wf-landing-page-001",
+  "name": "Landing Page Generation",
+  "description": "6-agent workflow for complete landing page creation",
+  "trigger": "manual",
+  "steps": [
+    {
+      "id": "step-1",
+      "agent": "research-agent",
+      "action": "analyze_competitors",
+      "params": {
+        "competitors": 5,
+        "analyze": [
+          "messaging",
+          "design",
+          "cta"
+        ]
+      },
+      "output": "competitor_analysis"
+    },
+    {
+      "id": "step-2",
+      "agent": "strategy-agent",
+      "action": "define_positioning",
+      "input": "competitor_analysis",
+      "output": "positioning"
+    },
+    {
+      "id": "step-3",
+      "agent": "copywriting-agent",
+      "action": "write_copy",
+      "params": {
+        "sections": [
+          "hero",
+          "features",
+          "social_proof",
+          "pricing",
+          "cta"
+        ]
+      },
+      "input": "positioning",
+      "output": "page_copy"
+    },
+    {
+      "id": "step-4",
+      "agent": "design-agent",
+      "action": "create_design",
+      "params": {
+        "style": "modern",
+        "responsive": true
+      },
+      "input": "page_copy",
+      "output": "design_specs"
+    },
+    {
+      "id": "step-5",
+      "agent": "development-agent",
+      "action": "generate_code",
+      "params": {
+        "framework": "react",
+        "styling": "tailwind"
+      },
+      "input": "design_specs",
+      "output": "page_code"
+    },
+    {
+      "id": "step-6",
+      "agent": "qa-agent",
+      "action": "test_page",
+      "params": {
+        "tests": [
+          "accessibility",
+          "performance",
+          "mobile"
+        ]
+      },
+      "input": "page_code",
+      "output": "qa_report"
+    }
+  ]
+}

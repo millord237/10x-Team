@@ -1,0 +1,25 @@
+{
+  "workflows": [
+    {
+      "id": "wf-lead-generation-001",
+      "name": "Lead Generation Workflow",
+      "description": "Automated prospect discovery and outreach workflow",
+      "trigger": "manual"
+    },
+    {
+      "id": "wf-content-campaign-001",
+      "name": "Content Marketing Campaign",
+      "description": "Automated content creation and distribution workflow",
+      "trigger": "schedule"
+    },
+    {
+      "id": "wf-landing-page-001",
+      "name": "Landing Page Generation",
+      "description": "6-agent workflow for complete landing page creation",
+      "trigger": "manual"
+    }
+  ],
+  "total": 3,
+  "generated_by": "10x Team",
+  "generated_at": "2026-01-23T03:34:57.702381"
+}

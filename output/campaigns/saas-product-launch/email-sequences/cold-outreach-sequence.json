@@ -1,0 +1,22 @@
+[
+  {
+    "sequence": "cold_outreach",
+    "email_number": 1,
+    "send_day": 0,
+    "subject": "Quick question about {{company_name}}'s analytics",
+    "preview": "Saw your recent ProductHunt launch...",
+    "body": "Hi {{first_name}},\n\nCongrats on the ProductHunt launch! Saw {{company_name}} hit #3 - impressive traction.\n\nQuick question: how are you tracking which features drive retention vs. which ones users ignore?\n\nI ask because we built FlowMetrics specifically for growing SaaS teams who need answers fast - without hiring a data team.\n\nWould you be open to a 15-min call to see if it's a fit?\n\nEither way, cheers to the launch momentum!\n\nBest,\nSarah\nFlowMetrics",
+    "cta": "Book a Quick Call",
+    "cta_link": "https://calendly.com/flowmetrics/demo"
+  },
+  {
+    "sequence": "cold_outreach",
+    "email_number": 2,
+    "send_day": 3,
+    "subject": "Re: Quick question about {{company_name}}'s analytics",
+    "preview": "Following up with something useful...",
+    "body": "Hi {{first_name}},\n\nFollowing up on my last note.\n\nI put together a quick analysis of what top SaaS companies track in their first year:\n\n1. Feature Adoption Rate (not just signups)\n2. Time-to-Value (how fast users hit \"aha\")\n3. Engagement Velocity (predicts churn 2 weeks early)\n\nMost tools make this hard. We make it automatic.\n\nWorth a 15-min look?\n\nBest,\nSarah",
+    "cta": "See How It Works",
+    "cta_link": "https://flowmetrics.io/demo-video"
+  }
+]

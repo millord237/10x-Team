@@ -1,0 +1,58 @@
+{
+  "id": "wf-content-campaign-001",
+  "name": "Content Marketing Campaign",
+  "description": "Automated content creation and distribution workflow",
+  "trigger": "schedule",
+  "schedule": "weekly",
+  "steps": [
+    {
+      "id": "step-1",
+      "skill": "content-marketing",
+      "action": "generate_content_ideas",
+      "params": {
+        "topic": "SaaS analytics",
+        "count": 5
+      },
+      "output": "content_ideas"
+    },
+    {
+      "id": "step-2",
+      "skill": "copywriting",
+      "action": "write_blog_post",
+      "params": {
+        "length": "1500 words",
+        "tone": "professional"
+      },
+      "input": "content_ideas[0]",
+      "output": "blog_post"
+    },
+    {
+      "id": "step-3",
+      "skill": "seo-optimization",
+      "action": "optimize_content",
+      "params": {
+        "target_keywords": [
+          "saas analytics",
+          "product analytics"
+        ],
+        "optimize_meta": true
+      },
+      "input": "blog_post",
+      "output": "optimized_post"
+    },
+    {
+      "id": "step-4",
+      "skill": "social-media",
+      "action": "create_social_posts",
+      "params": {
+        "platforms": [
+          "linkedin",
+          "twitter"
+        ],
+        "variations": 3
+      },
+      "input": "optimized_post",
+      "output": "social_posts"
+    }
+  ]
+}

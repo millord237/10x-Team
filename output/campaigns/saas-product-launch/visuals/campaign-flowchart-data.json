@@ -1,0 +1,70 @@
+{
+  "campaign_name": "FlowMetrics Product Launch",
+  "duration": "4 weeks",
+  "budget": "$5,000",
+  "phases": [
+    {
+      "week": 1,
+      "name": "Foundation",
+      "tasks": [
+        "Setup analytics tracking",
+        "Create landing pages",
+        "Write email sequences",
+        "Design ad creatives",
+        "Prepare content calendar"
+      ],
+      "deliverables": [
+        "Landing page live",
+        "5 email sequences",
+        "20 ad variations"
+      ]
+    },
+    {
+      "week": 2,
+      "name": "Pre-Launch",
+      "tasks": [
+        "Launch waitlist campaign",
+        "Reach out to 50 influencers",
+        "Publish teaser content",
+        "Build anticipation on social",
+        "Test all systems end-to-end"
+      ],
+      "deliverables": [
+        "500 waitlist signups",
+        "10 influencer confirmations"
+      ]
+    },
+    {
+      "week": 3,
+      "name": "Launch",
+      "tasks": [
+        "ProductHunt launch",
+        "Email blast to waitlist",
+        "Activate paid ads",
+        "PR outreach",
+        "Community engagement"
+      ],
+      "deliverables": [
+        "Top 5 on ProductHunt",
+        "200 trial signups",
+        "50K impressions"
+      ]
+    },
+    {
+      "week": 4,
+      "name": "Optimize",
+      "tasks": [
+        "Analyze week 3 results",
+        "A/B test top performers",
+        "Scale winning channels",
+        "Launch retargeting",
+        "Collect testimonials"
+      ],
+      "deliverables": [
+        "Campaign report",
+        "3 testimonials",
+        "Optimized funnel"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+[
+  {
+    "platform": "linkedin",
+    "type": "problem_awareness",
+    "content": "8% of your users will churn this month.\n\nBut here's the thing - most of them showed warning signs 2 weeks ago.\n\nThe signs:\n- Login frequency dropped 40%\n- Feature usage went from daily to weekly\n- Support tickets increased\n\nThe problem? Most founders only see this in hindsight.\n\nWhat if you could see it happening in real-time?\n\nThat's why we built FlowMetrics - automatic churn prediction for SaaS teams.\n\nNo data team needed. No complex setup. Just answers.\n\nWhat's your biggest challenge with user analytics? Drop a comment below.\n\n#SaaS #Analytics #ChurnPrevention #StartupLife",
+    "hashtags": [
+      "SaaS",
+      "Analytics",
+      "ChurnPrevention",
+      "StartupLife"
+    ],
+    "cta": "Comment for early access"
+  },
+  {
+    "platform": "linkedin",
+    "type": "carousel",
+    "title": "5 Metrics Every SaaS Founder Should Track (But Most Don't)",
+    "slides": [
+      "Slide 1: 5 Metrics Every SaaS Founder Should Track",
+      "Slide 2: #1 Engagement Velocity Score - How fast users adopt core features",
+      "Slide 3: #2 Time-to-Value - Minutes from signup to 'aha moment'",
+      "Slide 4: #3 Feature Adoption Curve - Which features drive retention",
+      "Slide 5: #4 Churn Risk Score - Predict who's leaving before they do",
+      "Slide 6: #5 Revenue per Feature - Which features justify their cost",
+      "Slide 7: Track all 5 automatically with FlowMetrics. Link in comments."
+    ],
+    "content": "5 metrics that separate growing SaaS companies from struggling ones. Which ones do you track? (Carousel below)",
+    "hashtags": [
+      "SaaS",
+      "Metrics",
+      "ProductAnalytics",
+      "GrowthHacking"
+    ]
+  },
+  {
+    "platform": "linkedin",
+    "type": "story",
+    "content": "Last month, we almost lost a $50K/year customer.\n\nHere's what happened (and how we caught it):\n\nDay 1: Their engagement score dropped 23%\nDay 2: Our alert fired. I personally reached out.\nDay 3: Discovered they were frustrated with our new UI\nDay 4: Rolled back their account to the old UI\nDay 5: They renewed for 2 more years\n\nTotal time from alert to save: 72 hours\n\nWithout automated alerts? They would've churned silently.\n\nThis is why we built FlowMetrics.\n\nWhat's your system for catching at-risk customers?\n\n#CustomerSuccess #SaaS #ChurnPrevention #StartupStory"
+  }
+]

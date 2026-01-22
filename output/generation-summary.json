@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-01-23T03:34:57.704691",
+  "generated_by": "10x Team",
+  "outputs": {
+    "pdfs": [
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\documentation\\10x-team-skills-guide.pdf",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\campaign-strategy.pdf",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\analytics-report.pdf"
+    ],
+    "email_sequences": [
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\email-sequences\\welcome-sequence.json",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\email-sequences\\cold-outreach-sequence.json",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\email-sequences\\welcome-sequence.md"
+    ],
+    "social_posts": [
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\social-posts\\linkedin-posts.json",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\social-posts\\twitter-posts.json",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\social-posts\\linkedin-content.md",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\social-posts\\twitter-content.md"
+    ],
+    "visuals": [
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\visuals\\sales-funnel.md",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\visuals\\sales-funnel-data.json",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\visuals\\campaign-flowchart.md",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\visuals\\campaign-flowchart-data.json"
+    ],
+    "workflows": [
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\workflows\\wf-lead-generation-001.json",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\workflows\\wf-content-campaign-001.json",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\workflows\\wf-landing-page-001.json",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\workflows\\workflow-index.json"
+    ],
+    "landing_page": [
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\landing-page-copy.json",
+      "C:\\Users\\Anit\\Downloads\\10x-Team\\output\\campaigns\\saas-product-launch\\landing-page-copy.md"
+    ]
+  },
+  "total_files": 20
+}

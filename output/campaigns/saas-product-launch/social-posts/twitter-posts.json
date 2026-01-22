@@ -1,0 +1,40 @@
+[
+  {
+    "platform": "twitter",
+    "type": "thread",
+    "content": [
+      "Why 90% of SaaS startups track the wrong metrics (thread):",
+      "1/ Most founders obsess over MRR and ARR. But these are lagging indicators. By the time MRR drops, it's too late.",
+      "2/ The leading indicator? Engagement Velocity. How fast are users adopting your core features after signup?",
+      "3/ Here's the formula: EVS = (Features Adopted / Days Since Signup) x 100. Anything below 40 = churn risk.",
+      "4/ We tracked this across 50 SaaS companies. Companies with EVS monitoring had 34% less churn.",
+      "5/ The best part? You can automate this. No data team needed. We built FlowMetrics to do exactly this.",
+      "6/ Want to calculate your EVS? Reply 'EVS' and I'll send you our free calculator."
+    ],
+    "hashtags": [
+      "SaaS",
+      "Metrics",
+      "Startup"
+    ]
+  },
+  {
+    "platform": "twitter",
+    "type": "single",
+    "content": "Hot take: Your analytics tool shouldn't require a data team to use.\n\nIf you need SQL to answer 'which users are about to churn?' - you're doing it wrong.\n\nThis is exactly why we built FlowMetrics. Ship insights, not queries.",
+    "hashtags": [
+      "SaaS",
+      "NoCode",
+      "Analytics"
+    ]
+  },
+  {
+    "platform": "twitter",
+    "type": "single",
+    "content": "The 3 questions every SaaS founder should answer daily:\n\n1. Which users are at risk of churning?\n2. Which features drive retention?\n3. What's my true time-to-value?\n\nIf you can't answer these in 30 seconds, we should talk.",
+    "hashtags": [
+      "SaaS",
+      "Founder",
+      "Metrics"
+    ]
+  }
+]

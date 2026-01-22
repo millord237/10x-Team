@@ -1,0 +1,54 @@
+{
+  "id": "wf-lead-generation-001",
+  "name": "Lead Generation Workflow",
+  "description": "Automated prospect discovery and outreach workflow",
+  "trigger": "manual",
+  "created_by": "10x Team",
+  "steps": [
+    {
+      "id": "step-1",
+      "skill": "outreach/discovery-engine",
+      "action": "discover_prospects",
+      "params": {
+        "icp": "SaaS founders in fintech",
+        "count": 50,
+        "mcp": "websets"
+      },
+      "output": "prospect_list"
+    },
+    {
+      "id": "step-2",
+      "skill": "outreach/email-composer",
+      "action": "generate_emails",
+      "params": {
+        "template": "cold_outreach",
+        "personalization": "high"
+      },
+      "input": "prospect_list",
+      "output": "email_drafts"
+    },
+    {
+      "id": "step-3",
+      "skill": "outreach/linkedin-adapter",
+      "action": "send_connection_requests",
+      "params": {
+        "message_template": "intro_short",
+        "daily_limit": 20
+      },
+      "input": "prospect_list"
+    },
+    {
+      "id": "step-4",
+      "skill": "analytics",
+      "action": "generate_report",
+      "params": {
+        "format": "pdf",
+        "include_metrics": [
+          "sent",
+          "opened",
+          "replied"
+        ]
+      }
+    }
+  ]
+}

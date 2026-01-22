@@ -1,0 +1,66 @@
+{
+  "stages": [
+    {
+      "name": "Awareness",
+      "metric": "Impressions",
+      "target": 10000,
+      "color": "#E0E7FF"
+    },
+    {
+      "name": "Interest",
+      "metric": "Website Visitors",
+      "target": 2000,
+      "conversion": "20%",
+      "color": "#C7D2FE"
+    },
+    {
+      "name": "Consideration",
+      "metric": "Leads",
+      "target": 500,
+      "conversion": "25%",
+      "color": "#A5B4FC"
+    },
+    {
+      "name": "Decision",
+      "metric": "Qualified Leads",
+      "target": 100,
+      "conversion": "20%",
+      "color": "#818CF8"
+    },
+    {
+      "name": "Purchase",
+      "metric": "Customers",
+      "target": 50,
+      "conversion": "50%",
+      "color": "#6366F1"
+    }
+  ],
+  "channels": {
+    "awareness": [
+      "LinkedIn Ads",
+      "Twitter Content",
+      "Google Ads",
+      "Blog/SEO"
+    ],
+    "interest": [
+      "Landing Page",
+      "Product Demo Video",
+      "Case Studies"
+    ],
+    "consideration": [
+      "Email Nurture",
+      "Free Trial",
+      "Demo Calls"
+    ],
+    "decision": [
+      "Sales Calls",
+      "Custom Demos",
+      "Proposal"
+    ],
+    "purchase": [
+      "Contract",
+      "Onboarding",
+      "Success Check-in"
+    ]
+  }
+}
