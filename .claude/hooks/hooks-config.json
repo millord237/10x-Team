@@ -1,0 +1,175 @@
+{
+  "$schema": "https://10x.in/schemas/hooks-config.json",
+  "version": "1.0.0",
+  "description": "Hook configuration for intelligent routing and context detection",
+  "developed_by": "Team 10x.in",
+
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "name": "keyword-router",
+        "file": "keyword-router.cjs",
+        "description": "Analyzes user messages for intelligent routing to MCP, agents, skills",
+        "priority": 1,
+        "enabled": true,
+        "outputs": [
+          "mcp-selection",
+          "routing-decision",
+          "detected-skills",
+          "detected-agents",
+          "user-context",
+          "routing-instructions",
+          "output-format"
+        ]
+      },
+      {
+        "name": "context-detector",
+        "file": "context-detector.cjs",
+        "description": "Extracts user intent and context for workflow triggering",
+        "priority": 2,
+        "enabled": true,
+        "outputs": [
+          "detected-intent",
+          "mcp-recommendation",
+          "recommended-agents",
+          "activate-skills",
+          "extracted-entities",
+          "trigger-workflow",
+          "output-formats"
+        ]
+      },
+      {
+        "name": "dev-rules-reminder",
+        "file": "dev-rules-reminder.cjs",
+        "description": "Injects development rules and context",
+        "priority": 3,
+        "enabled": true
+      },
+      {
+        "name": "brand-guidelines-reminder",
+        "file": "brand-guidelines-reminder.cjs",
+        "description": "Reminds to use brand guidelines for design/content tasks",
+        "priority": 4,
+        "enabled": true
+      }
+    ],
+
+    "PreToolCall": [
+      {
+        "name": "pre-tool-router",
+        "file": "pre-tool-router.cjs",
+        "description": "Routes tool calls to appropriate MCP and injects agent context",
+        "priority": 1,
+        "enabled": true,
+        "outputs": [
+          "pre-tool-mcp",
+          "pre-tool-skills",
+          "pre-tool-output",
+          "pre-tool-instructions"
+        ]
+      }
+    ],
+
+    "SessionStart": [
+      {
+        "name": "session-init",
+        "file": "session-init.cjs",
+        "description": "Initialize session environment",
+        "priority": 1,
+        "enabled": true
+      }
+    ],
+
+    "SubagentStart": [
+      {
+        "name": "subagent-init",
+        "file": "subagent-init.cjs",
+        "description": "Inject context to subagents",
+        "priority": 1,
+        "enabled": true
+      }
+    ],
+
+    "SessionEnd": [
+      {
+        "name": "session-end",
+        "file": "session-end.cjs",
+        "description": "Clean up session state",
+        "priority": 1,
+        "enabled": true
+      }
+    ]
+  },
+
+  "routing_config": {
+    "mcp_selection": {
+      "enabled": true,
+      "default_mcp": "exa",
+      "deep_research_mcp": "websets",
+      "threshold": {
+        "result_count": 10,
+        "confidence": 0.6
+      }
+    },
+
+    "skill_activation": {
+      "enabled": true,
+      "auto_activate": true,
+      "max_skills": 5
+    },
+
+    "agent_selection": {
+      "enabled": true,
+      "auto_select": true,
+      "max_agents": 3
+    },
+
+    "workflow_triggering": {
+      "enabled": true,
+      "config_file": "../workflows/workflow-triggers.json",
+      "require_approval": true
+    },
+
+    "output_format": {
+      "enabled": true,
+      "default_format": "json",
+      "pdf_branding": true
+    }
+  },
+
+  "keyword_patterns": {
+    "websets_triggers": [
+      "prospects", "leads", "lead list", "lead generation",
+      "outreach list", "campaign list", "b2b", "prospect list",
+      "detailed research", "deep research", "exhaustive",
+      "enriched", "verified contacts", "comprehensive list",
+      "find all", "linkedin list", "email list"
+    ],
+
+    "exa_triggers": [
+      "quick search", "lookup", "what is", "who is",
+      "find a few", "quick info", "brief", "overview",
+      "company info", "basic research"
+    ],
+
+    "workflow_triggers": [
+      "workflow", "automate", "autonomous", "multi-step",
+      "create workflow", "run workflow"
+    ],
+
+    "report_triggers": [
+      "report", "pdf", "document", "presentation",
+      "analytics report", "generate report"
+    ]
+  },
+
+  "context_extraction": {
+    "extract_numbers": true,
+    "extract_platforms": true,
+    "extract_roles": true,
+    "extract_industries": true,
+    "extract_locations": true,
+    "detect_urgency": true,
+    "detect_multi_step": true
+  }
+}

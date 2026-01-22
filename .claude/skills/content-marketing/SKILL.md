@@ -61,6 +61,64 @@ Load: `references/content-audit-checklist.md`
 - Podcast → Blog post
 - Webinar → Multiple blogs
 
+## MCP Server Guidelines
+
+**Content marketing uses MCPs for research and inspiration.**
+
+### When to Use Exa MCP (`exa-mcp-server`)
+
+Use for **quick content research**:
+
+| Task | Example |
+|------|---------|
+| Topic research | "What are trending topics in AI?" |
+| Competitor content | "Find competitor blog posts on SaaS pricing" |
+| Content inspiration | "Popular articles on product marketing" |
+| Quick reference | "Best practices for B2B content" |
+
+**Characteristics:**
+- Fast response for inspiration
+- Good for topic ideation
+- Quick competitive research
+
+### When to Use Websets MCP (`websets-mcp-server`)
+
+Use for **comprehensive content analysis**:
+
+| Task | Example |
+|------|---------|
+| Full content audit | "All competitor content in fintech space" |
+| Topic cluster research | "Comprehensive topic map for AI marketing" |
+| Influencer research | "Find all content creators in SaaS marketing" |
+| Deep market analysis | "Content strategies of top 50 B2B SaaS companies" |
+
+**Characteristics:**
+- Exhaustive research
+- Comprehensive competitor analysis
+- Deep topic exploration
+
+### MCP Selection Matrix
+
+| Content Task | MCP | Reason |
+|--------------|-----|--------|
+| Blog topic ideas | Exa | Quick inspiration |
+| Content pillar research | Websets | Comprehensive mapping |
+| Competitor post analysis | Exa (quick) | Fast research |
+| Full content audit | Websets | Exhaustive analysis |
+| Trending topics | Exa | Real-time search |
+| Influencer discovery | Websets | Comprehensive list |
+
+### Auto-Selection Logic
+
+```python
+def select_mcp_for_content(task: str, scope: str) -> str:
+    if scope in ['comprehensive', 'full', 'all', 'exhaustive']:
+        return 'websets'
+    if 'audit' in task and 'quick' not in task:
+        return 'websets'
+    return 'exa'  # Default for most content tasks
+```
+
 ## Report Output
 
 **Activate:** `assets-organizing` skill for report file paths

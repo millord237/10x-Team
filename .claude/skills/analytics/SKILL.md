@@ -66,6 +66,52 @@ Load: `references/analysis-workflows.md`
 4. Determine winner
 5. Document learnings
 
+## MCP Server Guidelines
+
+**Analytics uses specialized MCPs for data collection.**
+
+### Google Analytics MCP
+Use for: Website traffic, user behavior, conversion tracking
+
+```
+Capabilities:
+- Real-time user data
+- Audience reports
+- Acquisition channels
+- Conversion funnels
+```
+
+### When to Use Exa MCP
+
+Use for **competitive research** and **benchmarking**:
+- "What's the average conversion rate for SaaS?"
+- "Research competitor marketing strategies"
+- "Find industry benchmark data"
+
+### When to Use Websets MCP
+
+Use for **market research** and **comprehensive analysis**:
+- "Research all competitors in the CRM space"
+- "Detailed analysis of marketing trends in fintech"
+- "Comprehensive benchmarks for B2B SaaS"
+
+### MCP Selection Matrix
+
+| Task | MCP | Reason |
+|------|-----|--------|
+| Website metrics | Google Analytics | First-party data |
+| Quick benchmarks | Exa | Fast research |
+| Deep market research | Websets | Exhaustive analysis |
+| Competitor analysis | Exa (quick) / Websets (deep) | Depends on depth |
+| Ad performance | Platform MCPs | First-party data |
+
+### Output Format
+
+Analytics reports should always generate:
+1. **PDF** - Branded report with 10x.in branding
+2. **JSON** - Raw data for further processing
+3. **Markdown** - Documentation format
+
 ## Report Output
 
 **Activate:** `assets-organizing` skill for report file paths

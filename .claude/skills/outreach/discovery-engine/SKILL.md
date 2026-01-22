@@ -43,16 +43,81 @@ Do NOT use this skill for:
 4. **Target Management** - Store and organize discovered people
 5. **Export** - Export to JSON/CSV for campaigns
 
-## Exa AI MCP Integration
+## MCP Selection Guidelines
 
-This skill uses Exa AI MCP for intelligent search. The following Exa tools are available:
+**CRITICAL:** Select the correct MCP based on query requirements.
 
-- `linkedin_search_exa` - Search LinkedIn for people
-- `company_research_exa` - Research companies
-- `web_search_exa` - General web search for profiles
-- `deep_researcher_start/check` - Deep research on topics
+### When to Use Exa MCP (`exa-mcp-server`)
 
-**Note:** Ensure Exa AI MCP is configured in Claude Code settings.
+Use for **quick searches** and **exploration**:
+
+| Scenario | Example |
+|----------|---------|
+| Quick lookup | "Find 5 marketers at Google" |
+| Company info | "What does Acme Corp do?" |
+| Small result set | < 10 prospects needed |
+| Exploratory search | "Who are the AI startup founders?" |
+
+**Exa Tools:**
+- `linkedin_search_exa` - Quick LinkedIn search
+- `company_research_exa` - Company information
+- `web_search_exa` - General web search
+
+**Characteristics:**
+- Fast response (seconds)
+- Good for initial discovery
+- Limited depth
+
+### When to Use Websets MCP (`websets-mcp-server`)
+
+Use for **deep research** and **exhaustive prospect lists**:
+
+| Scenario | Example |
+|----------|---------|
+| Large prospect list | "Find 50 LinkedIn marketers" |
+| B2B lead generation | "Build outreach list for AI startups" |
+| Enriched data needed | "Find verified emails for founders" |
+| Campaign-ready leads | "Prospect list for Series B CTOs" |
+
+**Websets Tools:**
+- Exhaustive LinkedIn searches
+- AI-powered data enrichment
+- Verified contact information
+- Bulk prospect discovery
+
+**Characteristics:**
+- Thorough, complete results
+- Takes longer but more comprehensive
+- Best for outreach campaigns
+
+### Auto-Selection Logic
+
+```python
+def select_mcp(query: str, result_count: int) -> str:
+    websets_keywords = ['prospects', 'leads', 'outreach', 'campaign',
+                        'enriched', 'verified', 'comprehensive', 'list of']
+
+    # Use Websets for large counts
+    if result_count >= 10:
+        return 'websets'
+
+    # Use Websets for prospect-related keywords
+    if any(kw in query.lower() for kw in websets_keywords):
+        return 'websets'
+
+    # Default to Exa for quick searches
+    return 'exa'
+```
+
+### MCP Configuration
+
+Ensure MCPs are configured in `.claude/.mcp.json`:
+```json
+{
+  "exa": { "command": "npx", "args": ["-y", "exa-mcp-server"] },
+  "websets": { "command": "npx", "args": ["-y", "websets-mcp-server"] }
+}
+```
 
 ## Discovery Workflow
 

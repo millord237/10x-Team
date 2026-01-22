@@ -1,0 +1,326 @@
+{
+  "$schema": "https://10x.in/schemas/workflow-triggers.json",
+  "version": "1.0.0",
+  "description": "Workflow trigger configuration for intelligent routing",
+  "developed_by": "Team 10x.in",
+
+  "triggers": {
+    "prospect-discovery": {
+      "name": "Prospect Discovery Workflow",
+      "description": "Find and enrich prospects using Exa/Websets MCP",
+      "keywords": [
+        "find prospects", "discover leads", "lead research",
+        "find marketers", "find founders", "find ctos",
+        "prospect list", "outreach list", "lead generation"
+      ],
+      "patterns": [
+        "find\\s+\\d+\\s+(prospects|leads|people|marketers|founders|ctos)",
+        "discover\\s+(prospects|leads)",
+        "prospect\\s+(research|discovery|list)",
+        "build\\s+.*outreach\\s+list"
+      ],
+      "mcp": {
+        "default": "websets",
+        "fallback": "exa",
+        "selection_rules": {
+          "use_websets_when": [
+            "result_count >= 10",
+            "keywords contain 'prospects' or 'leads'",
+            "keywords contain 'enriched' or 'verified'"
+          ],
+          "use_exa_when": [
+            "result_count < 10",
+            "keywords contain 'quick' or 'few'"
+          ]
+        }
+      },
+      "agents": ["discovery-agent"],
+      "skills": ["outreach", "workflow-engine"],
+      "outputs": {
+        "primary": "pdf",
+        "available": ["pdf", "json", "csv"],
+        "branding": true
+      },
+      "steps": [
+        "Create discovery session",
+        "Execute MCP search",
+        "Process and enrich results",
+        "Generate branded report",
+        "Export to requested format"
+      ]
+    },
+
+    "content-creation": {
+      "name": "Content Creation Workflow",
+      "description": "Create content with research and optimization",
+      "keywords": [
+        "create content", "write blog", "write article",
+        "content strategy", "content calendar", "editorial"
+      ],
+      "patterns": [
+        "create\\s+.*content",
+        "write\\s+.*blog",
+        "content\\s+(strategy|calendar|plan)"
+      ],
+      "mcp": {
+        "default": "exa",
+        "selection_rules": {
+          "use_websets_when": [
+            "comprehensive research needed",
+            "full content audit"
+          ],
+          "use_exa_when": [
+            "topic research",
+            "quick inspiration"
+          ]
+        }
+      },
+      "agents": ["content-creator", "copywriter"],
+      "skills": ["content-marketing", "copywriting", "seo-optimization"],
+      "outputs": {
+        "primary": "markdown",
+        "available": ["markdown", "json", "pdf"]
+      },
+      "steps": [
+        "Research topic using Exa",
+        "Create content brief",
+        "Draft content",
+        "Optimize for SEO",
+        "Generate final output"
+      ]
+    },
+
+    "landing-page-creation": {
+      "name": "Landing Page Creation Workflow",
+      "description": "6-agent workflow for complete landing pages",
+      "keywords": [
+        "landing page", "create page", "build page",
+        "conversion page", "sales page", "squeeze page"
+      ],
+      "patterns": [
+        "create\\s+.*landing\\s+page",
+        "build\\s+.*landing\\s+page",
+        "landing\\s+page\\s+for"
+      ],
+      "mcp": {
+        "default": "exa",
+        "selection_rules": {
+          "use_exa_when": [
+            "competitor research",
+            "design inspiration"
+          ]
+        }
+      },
+      "agents": [
+        "discovery-agent",
+        "copywriting-agent",
+        "design-agent",
+        "build-agent",
+        "qa-agent",
+        "launch-agent"
+      ],
+      "skills": ["landing-page", "design", "copywriting", "frontend-design"],
+      "outputs": {
+        "primary": "html",
+        "available": ["html", "css", "js", "pdf"]
+      },
+      "clarification_questions": [
+        "What is your product/service?",
+        "Who is your target audience?",
+        "What is the primary conversion goal?",
+        "What is your brand personality?",
+        "Any specific design preferences?"
+      ]
+    },
+
+    "campaign-launch": {
+      "name": "Campaign Launch Workflow",
+      "description": "Plan and launch marketing campaigns",
+      "keywords": [
+        "launch campaign", "create campaign", "marketing campaign",
+        "ad campaign", "campaign management"
+      ],
+      "patterns": [
+        "launch\\s+.*campaign",
+        "create\\s+.*campaign",
+        "campaign\\s+(setup|launch|management)"
+      ],
+      "mcp": {
+        "default": "websets",
+        "selection_rules": {
+          "use_websets_when": [
+            "audience research needed",
+            "competitor analysis"
+          ],
+          "use_exa_when": [
+            "quick market check"
+          ]
+        }
+      },
+      "agents": ["campaign-manager", "analytics-analyst"],
+      "skills": ["campaign-management", "ads-management", "analytics"],
+      "outputs": {
+        "primary": "pdf",
+        "available": ["pdf", "json"]
+      }
+    },
+
+    "outreach-sequence": {
+      "name": "Outreach Sequence Workflow",
+      "description": "Multi-channel outreach automation",
+      "keywords": [
+        "outreach sequence", "outreach workflow", "multi-channel outreach",
+        "linkedin outreach", "cold email sequence"
+      ],
+      "patterns": [
+        "outreach\\s+(sequence|workflow|campaign)",
+        "multi-channel\\s+outreach",
+        "(linkedin|twitter|email)\\s+outreach"
+      ],
+      "mcp": {
+        "default": "websets",
+        "selection_rules": {
+          "use_websets_when": [
+            "prospect discovery needed",
+            "large outreach list"
+          ]
+        }
+      },
+      "agents": ["campaign-manager", "email-wizard"],
+      "skills": ["outreach", "email-marketing", "workflow-engine"],
+      "outputs": {
+        "primary": "json",
+        "available": ["json", "pdf", "csv"]
+      }
+    },
+
+    "seo-audit": {
+      "name": "SEO Audit Workflow",
+      "description": "Comprehensive SEO analysis and recommendations",
+      "keywords": [
+        "seo audit", "site audit", "technical seo",
+        "keyword research", "backlink analysis"
+      ],
+      "patterns": [
+        "seo\\s+(audit|analysis)",
+        "site\\s+audit",
+        "keyword\\s+research"
+      ],
+      "mcp": {
+        "default": "exa",
+        "specialized": {
+          "rankings": "google_search_console",
+          "keywords": "reviewweb_api",
+          "backlinks": "websets"
+        },
+        "selection_rules": {
+          "use_websets_when": [
+            "full backlink audit",
+            "comprehensive competitor analysis"
+          ],
+          "use_gsc_when": [
+            "ranking data needed",
+            "query analysis"
+          ],
+          "use_reviewweb_when": [
+            "keyword metrics needed",
+            "domain analysis"
+          ],
+          "use_exa_when": [
+            "quick competitor check",
+            "SERP research"
+          ]
+        }
+      },
+      "agents": ["seo-specialist"],
+      "skills": ["seo-optimization", "analytics"],
+      "outputs": {
+        "primary": "pdf",
+        "available": ["pdf", "markdown", "json"]
+      }
+    },
+
+    "analytics-report": {
+      "name": "Analytics Report Workflow",
+      "description": "Generate performance reports and insights",
+      "keywords": [
+        "analytics report", "performance report", "monthly report",
+        "weekly report", "kpi dashboard"
+      ],
+      "patterns": [
+        "analytics\\s+report",
+        "(weekly|monthly|quarterly)\\s+report",
+        "performance\\s+(report|metrics)"
+      ],
+      "mcp": {
+        "default": null,
+        "specialized": {
+          "website_metrics": "google_analytics",
+          "ad_performance": "platform_specific",
+          "benchmarks": "exa"
+        }
+      },
+      "agents": ["analytics-analyst"],
+      "skills": ["analytics"],
+      "outputs": {
+        "primary": "pdf",
+        "available": ["pdf", "json"],
+        "branding": true
+      }
+    },
+
+    "email-sequence": {
+      "name": "Email Sequence Workflow",
+      "description": "Create automated email sequences",
+      "keywords": [
+        "email sequence", "email campaign", "drip campaign",
+        "newsletter", "email automation"
+      ],
+      "patterns": [
+        "email\\s+(sequence|campaign|series)",
+        "drip\\s+(campaign|sequence)",
+        "newsletter"
+      ],
+      "mcp": {
+        "default": "exa",
+        "selection_rules": {
+          "use_exa_when": [
+            "email template research",
+            "best practices lookup"
+          ]
+        }
+      },
+      "agents": ["email-wizard", "email-planner"],
+      "skills": ["email-marketing", "copywriting"],
+      "outputs": {
+        "primary": "json",
+        "available": ["json", "markdown"]
+      }
+    }
+  },
+
+  "mcp_defaults": {
+    "quick_search": "exa",
+    "deep_research": "websets",
+    "website_analytics": "google_analytics",
+    "search_rankings": "google_search_console",
+    "keyword_metrics": "reviewweb_api"
+  },
+
+  "output_branding": {
+    "enabled": true,
+    "brand_name": "10x.in",
+    "logo_path": "assets/brand/logo.png",
+    "colors": {
+      "primary": "#6366F1",
+      "secondary": "#1a1a2e"
+    },
+    "footer_text": "Generated by 10x Team - Marketing Automation Toolkit | https://10x.in"
+  },
+
+  "clarification_rules": {
+    "ask_upfront": true,
+    "max_questions": 5,
+    "required_before_execution": true
+  }
+}

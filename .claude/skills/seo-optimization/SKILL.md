@@ -106,6 +106,73 @@ node scripts/audit-core-web-vitals.cjs -s sitemap.xml -f md -o report.md
 
 **Schema:** `schema-generation.md`, `schema-templates/` (article, product, faq, howto, organization, localbusiness)
 
+## MCP Server Guidelines
+
+**SEO uses multiple MCPs for different tasks.**
+
+### Primary MCPs for SEO
+
+| MCP | Use For |
+|-----|---------|
+| Google Search Console | First-party ranking data, queries, pages |
+| ReviewWeb.site API | Keyword research, domain analysis |
+| Exa MCP | Quick competitor research |
+| Websets MCP | Comprehensive backlink/competitor analysis |
+
+### When to Use Exa MCP (`exa-mcp-server`)
+
+Use for **quick SEO research**:
+
+| Task | Example |
+|------|---------|
+| Quick keyword ideas | "Find keywords for SaaS pricing" |
+| Competitor lookup | "What keywords does competitor.com rank for?" |
+| Content gap analysis | "Quick gaps in our content vs competitors" |
+| SERP research | "What's ranking for 'best CRM software'?" |
+
+### When to Use Websets MCP (`websets-mcp-server`)
+
+Use for **comprehensive SEO analysis**:
+
+| Task | Example |
+|------|---------|
+| Full backlink audit | "All backlinks pointing to competitor.com" |
+| Complete competitor analysis | "All SEO strategies of top 20 competitors" |
+| Exhaustive keyword research | "All keyword opportunities in fintech" |
+| Link building prospects | "Find 50 sites for guest posting in SaaS" |
+
+### MCP Selection Matrix
+
+| SEO Task | MCP | Reason |
+|----------|-----|--------|
+| Keyword volume lookup | ReviewWeb API | Accurate metrics |
+| Quick competitor check | Exa | Fast research |
+| Full backlink audit | Websets | Exhaustive list |
+| SERP analysis | Exa | Quick SERP data |
+| Link prospect list | Websets | Comprehensive list |
+| Technical SEO audit | Browser/PageSpeed | First-party tools |
+| Ranking tracking | Google Search Console | First-party data |
+
+### Auto-Selection Logic
+
+```python
+def select_mcp_for_seo(task: str, result_count: int = 0) -> str:
+    # Use specialized APIs first
+    if 'ranking' in task or 'search console' in task:
+        return 'gsc'  # Google Search Console
+    if 'keyword volume' in task or 'keyword difficulty' in task:
+        return 'reviewweb'  # ReviewWeb API
+
+    # Websets for comprehensive tasks
+    websets_tasks = ['backlink audit', 'link prospects', 'full analysis',
+                     'all competitors', 'comprehensive']
+    if any(t in task.lower() for t in websets_tasks) or result_count >= 20:
+        return 'websets'
+
+    # Default to Exa for quick research
+    return 'exa'
+```
+
 ## Report Output
 
 **Activate:** `assets-organizing` skill for report file paths
