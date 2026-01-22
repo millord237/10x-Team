@@ -115,6 +115,78 @@ The Orchestrator can invoke these skill categories:
 
 ---
 
+## MCP Server Selection
+
+**CRITICAL:** The orchestrator MUST select the correct MCP server for research tasks.
+
+### Exa MCP (Quick Searches)
+```
+Use when:
+- User needs fast, basic information
+- Query asks for < 10 results
+- Keywords: "quick", "lookup", "what is", "find a few"
+- Exploratory or informational queries
+```
+
+**Capabilities:**
+- Web search with AI understanding
+- LinkedIn profile lookups
+- Company information
+- Fast response times
+
+### Websets MCP (Deep Research)
+```
+Use when:
+- User needs exhaustive prospect lists
+- Query asks for >= 10 results
+- Keywords: "prospects", "leads", "outreach list", "detailed"
+- B2B lead generation tasks
+- Campaign preparation
+```
+
+**Capabilities:**
+- Exhaustive LinkedIn searches
+- AI-powered data enrichment
+- Verified contact information
+- Bulk prospect discovery
+
+### Auto-Selection Logic
+
+```python
+def select_mcp_for_research(query: str, result_count: int) -> str:
+    """Automatically select appropriate MCP server."""
+
+    # Websets indicators
+    websets_keywords = [
+        "prospects", "leads", "outreach", "campaign",
+        "detailed", "enriched", "verified", "exhaustive",
+        "list of", "find all", "comprehensive"
+    ]
+
+    # Check for Websets triggers
+    if result_count >= 10:
+        return "websets"
+
+    if any(kw in query.lower() for kw in websets_keywords):
+        return "websets"
+
+    # Default to Exa for quick searches
+    return "exa"
+```
+
+### Example Routing
+
+| User Request | MCP | Reason |
+|--------------|-----|--------|
+| "Find me 5 SaaS founders" | Exa | Small count, exploratory |
+| "Find 50 LinkedIn marketers" | Websets | Large count, prospect list |
+| "What does Stripe do?" | Exa | Informational query |
+| "Build outreach list for AI startups" | Websets | Campaign preparation |
+| "Quick lookup on competitor pricing" | Exa | Keyword "quick" |
+| "Detailed research on fintech CTOs" | Websets | Keyword "detailed" |
+
+---
+
 ## Workflow Template Format
 
 ```json

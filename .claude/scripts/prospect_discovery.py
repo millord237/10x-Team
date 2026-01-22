@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """
-Prospect Discovery Engine - Find prospects using Exa AI and generate branded reports
+Prospect Discovery Engine - Find prospects using Exa/Websets AI and generate branded reports
 Developed by Team 10x.in
 
+MCP SELECTION GUIDE:
+====================
+- EXA MCP: Quick searches, < 10 results, exploratory queries
+- WEBSETS MCP: Deep research, >= 10 results, B2B lead generation, prospect lists
+
 This script:
-1. Uses Exa MCP for intelligent prospect discovery
-2. Enriches profiles via browser extension (optional)
-3. Generates branded PDF reports with 10x.in branding
+1. Uses Exa MCP for quick prospect discovery (< 10 results)
+2. Uses Websets MCP for deep research and exhaustive prospect lists (>= 10 results)
+3. Enriches profiles via browser extension (optional)
+4. Generates branded PDF reports with 10x.in branding
 """
 
 import json
@@ -38,7 +44,15 @@ REPORTS_DIR = ROOT_DIR / "output" / "reports"
 
 
 class ProspectDiscovery:
-    """Prospect discovery using Exa AI with branded report generation."""
+    """Prospect discovery using Exa/Websets AI with branded report generation."""
+
+    # Keywords that trigger Websets MCP
+    WEBSETS_KEYWORDS = [
+        "prospects", "leads", "outreach", "campaign",
+        "detailed", "enriched", "verified", "exhaustive",
+        "list of", "find all", "comprehensive", "b2b",
+        "lead generation", "prospect list"
+    ]
 
     def __init__(self):
         self.output_dir = OUTPUT_DIR
@@ -53,6 +67,69 @@ class ProspectDiscovery:
         self.prospects = self._load_json(self.prospects_file, [])
         self.sessions = self._load_json(self.sessions_file, [])
 
+    @staticmethod
+    def select_mcp(query: str, result_count: int = 0) -> str:
+        """
+        Select appropriate MCP server based on query and expected results.
+
+        Returns:
+            'exa' for quick searches
+            'websets' for deep research
+        """
+        query_lower = query.lower()
+
+        # Check for Websets triggers
+        if result_count >= 10:
+            return "websets"
+
+        for keyword in ProspectDiscovery.WEBSETS_KEYWORDS:
+            if keyword in query_lower:
+                return "websets"
+
+        # Check for numbers in query (e.g., "find 50 marketers")
+        import re
+        numbers = re.findall(r'\b(\d+)\b', query)
+        for num_str in numbers:
+            if int(num_str) >= 10:
+                return "websets"
+
+        # Default to Exa for quick searches
+        return "exa"
+
+    @staticmethod
+    def get_mcp_recommendation(query: str, result_count: int = 0) -> dict:
+        """
+        Get MCP recommendation with explanation.
+
+        Returns dict with 'mcp', 'reason', and 'capabilities'.
+        """
+        mcp = ProspectDiscovery.select_mcp(query, result_count)
+
+        if mcp == "websets":
+            return {
+                "mcp": "websets",
+                "reason": "Deep research query detected (large result count, prospect keywords, or B2B lead generation)",
+                "capabilities": [
+                    "Exhaustive LinkedIn searches",
+                    "AI-powered data enrichment",
+                    "Verified contact information",
+                    "Bulk prospect discovery"
+                ],
+                "best_for": "Campaign-ready prospect lists"
+            }
+        else:
+            return {
+                "mcp": "exa",
+                "reason": "Quick search query detected (small result count or exploratory)",
+                "capabilities": [
+                    "Fast web searches",
+                    "LinkedIn profile lookups",
+                    "Company information",
+                    "Quick response times"
+                ],
+                "best_for": "Initial discovery and exploration"
+            }
+
     def _load_json(self, path: Path, default: Any) -> Any:
         """Load JSON file or return default."""
         if path.exists():
@@ -65,12 +142,29 @@ class ProspectDiscovery:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, default=str)
 
-    def create_session(self, query: str, source: str = "exa_search") -> Dict:
-        """Create a new discovery session."""
+    def create_session(self, query: str, source: str = None, expected_count: int = 0) -> Dict:
+        """
+        Create a new discovery session with MCP recommendation.
+
+        Args:
+            query: Search query
+            source: MCP source (auto-detected if None)
+            expected_count: Expected number of results (helps MCP selection)
+        """
+        # Auto-select MCP if not specified
+        if source is None:
+            mcp_recommendation = self.get_mcp_recommendation(query, expected_count)
+            source = f"{mcp_recommendation['mcp']}_search"
+            print(f"MCP Selection: {mcp_recommendation['mcp'].upper()}")
+            print(f"  Reason: {mcp_recommendation['reason']}")
+            print(f"  Best for: {mcp_recommendation['best_for']}")
+
         session = {
             "session_id": f"session_{uuid.uuid4().hex[:8]}",
             "query": query,
             "source": source,
+            "mcp_used": source.replace("_search", ""),
+            "expected_count": expected_count,
             "created_at": datetime.now().isoformat(),
             "status": "active",
             "prospect_count": 0,
@@ -85,16 +179,30 @@ class ProspectDiscovery:
 
     def add_prospects_from_exa(self, session_id: str, exa_results: List[Dict]) -> List[Dict]:
         """
-        Process Exa AI search results and add prospects.
+        Process Exa AI or Websets search results and add prospects.
 
-        Expected exa_results format:
+        Supports both Exa MCP and Websets MCP result formats.
+
+        Exa format:
         [
             {
                 "title": "John Smith - AI Founder | LinkedIn",
                 "url": "https://linkedin.com/in/johnsmith",
-                "snippet": "Founder at TechStartup. Previously at Google...",
-                "author": "John Smith",
-                "published_date": "2024-01-15"
+                "snippet": "Founder at TechStartup...",
+            },
+            ...
+        ]
+
+        Websets format (enriched):
+        [
+            {
+                "name": "John Smith",
+                "title": "AI Founder",
+                "company": "TechStartup",
+                "linkedin_url": "https://linkedin.com/in/johnsmith",
+                "email": "john@techstartup.com",
+                "location": "San Francisco, CA",
+                "enriched": true
             },
             ...
         ]
@@ -104,40 +212,66 @@ class ProspectDiscovery:
             raise ValueError(f"Session not found: {session_id}")
 
         added_prospects = []
+        source = session.get("source", "exa_search")
 
         for result in exa_results:
-            # Parse LinkedIn URL to extract profile info
-            url = result.get("url", "")
-            title = result.get("title", "")
-            snippet = result.get("snippet", "")
+            # Check if this is enriched Websets data
+            is_websets = result.get("enriched", False) or "email" in result
 
-            # Extract name from title (usually "Name - Title | LinkedIn")
-            name = title.split(" - ")[0].strip() if " - " in title else title.split(" | ")[0].strip()
+            if is_websets:
+                # Websets format - already enriched
+                prospect = {
+                    "prospect_id": f"prospect_{uuid.uuid4().hex[:8]}",
+                    "name": result.get("name", "Unknown"),
+                    "headline": result.get("title", result.get("headline", "")),
+                    "linkedin_url": result.get("linkedin_url", result.get("url")),
+                    "twitter_url": result.get("twitter_url"),
+                    "email": result.get("email"),
+                    "company": result.get("company"),
+                    "location": result.get("location"),
+                    "snippet": result.get("summary", result.get("snippet", ""))[:500],
+                    "source": "websets_search",
+                    "session_id": session_id,
+                    "discovered_at": datetime.now().isoformat(),
+                    "status": "discovered",
+                    "enriched": True,
+                    "tags": result.get("tags", []),
+                    "notes": ""
+                }
+            else:
+                # Exa format - parse from title/URL
+                url = result.get("url", "")
+                title = result.get("title", "")
+                snippet = result.get("snippet", "")
 
-            # Extract headline/title
-            headline = ""
-            if " - " in title:
-                parts = title.split(" - ")
-                if len(parts) > 1:
-                    headline = parts[1].split(" | ")[0].strip()
+                # Extract name from title (usually "Name - Title | LinkedIn")
+                name = title.split(" - ")[0].strip() if " - " in title else title.split(" | ")[0].strip()
 
-            prospect = {
-                "prospect_id": f"prospect_{uuid.uuid4().hex[:8]}",
-                "name": name,
-                "headline": headline,
-                "linkedin_url": url if "linkedin.com" in url else None,
-                "twitter_url": None,
-                "email": None,
-                "company": self._extract_company(headline, snippet),
-                "location": self._extract_location(snippet),
-                "snippet": snippet[:500] if snippet else None,
-                "source": "exa_search",
-                "session_id": session_id,
-                "discovered_at": datetime.now().isoformat(),
-                "status": "discovered",
-                "tags": [],
-                "notes": ""
-            }
+                # Extract headline/title
+                headline = ""
+                if " - " in title:
+                    parts = title.split(" - ")
+                    if len(parts) > 1:
+                        headline = parts[1].split(" | ")[0].strip()
+
+                prospect = {
+                    "prospect_id": f"prospect_{uuid.uuid4().hex[:8]}",
+                    "name": name,
+                    "headline": headline,
+                    "linkedin_url": url if "linkedin.com" in url else None,
+                    "twitter_url": None,
+                    "email": None,
+                    "company": self._extract_company(headline, snippet),
+                    "location": self._extract_location(snippet),
+                    "snippet": snippet[:500] if snippet else None,
+                    "source": "exa_search",
+                    "session_id": session_id,
+                    "discovered_at": datetime.now().isoformat(),
+                    "status": "discovered",
+                    "enriched": False,
+                    "tags": [],
+                    "notes": ""
+                }
 
             # Deduplicate by LinkedIn URL
             if prospect["linkedin_url"]:
@@ -461,29 +595,66 @@ Prospect Discovery Engine - 10x.in
 Usage: python prospect_discovery.py <command> [options]
 
 Commands:
-  session <query>           Create a new discovery session
-  add <session_id> <json>   Add Exa results to session (JSON file path)
-  list [--session <id>]     List prospects
-  report [--session <id>]   Generate branded PDF report
-  export [--format csv|json] Export prospects
+  recommend <query> [count]   Get MCP recommendation (exa vs websets)
+  session <query> [--count N] Create a new discovery session
+  add <session_id> <json>     Add Exa/Websets results to session
+  list [--session <id>]       List prospects
+  report [--session <id>]     Generate branded PDF report
+  export [--format csv|json]  Export prospects
+
+MCP Selection:
+  - Exa MCP: Quick searches, < 10 results, exploratory
+  - Websets MCP: Deep research, >= 10 results, B2B leads
 
 Examples:
-  python prospect_discovery.py session "LinkedIn marketers San Francisco"
-  python prospect_discovery.py add session_abc123 exa_results.json
+  # Get MCP recommendation
+  python prospect_discovery.py recommend "find 50 LinkedIn marketers"
+
+  # Create session (auto-selects MCP)
+  python prospect_discovery.py session "LinkedIn marketers" --count 50
+
+  # Add results and generate report
+  python prospect_discovery.py add session_abc123 websets_results.json
   python prospect_discovery.py report --session session_abc123
-  python prospect_discovery.py export --format csv
         """)
         sys.exit(1)
 
     command = sys.argv[1]
     discovery = ProspectDiscovery()
 
-    if command == "session":
+    if command == "recommend":
         if len(sys.argv) < 3:
-            print("Usage: prospect_discovery.py session <query>")
+            print("Usage: prospect_discovery.py recommend <query> [expected_count]")
             sys.exit(1)
-        query = " ".join(sys.argv[2:])
-        session = discovery.create_session(query)
+        query = sys.argv[2]
+        count = int(sys.argv[3]) if len(sys.argv) > 3 else 0
+        recommendation = ProspectDiscovery.get_mcp_recommendation(query, count)
+        print(f"\nMCP Recommendation for: \"{query}\"")
+        print(f"{'='*50}")
+        print(f"Recommended MCP: {recommendation['mcp'].upper()}")
+        print(f"Reason: {recommendation['reason']}")
+        print(f"Best for: {recommendation['best_for']}")
+        print(f"\nCapabilities:")
+        for cap in recommendation['capabilities']:
+            print(f"  - {cap}")
+
+    elif command == "session":
+        if len(sys.argv) < 3:
+            print("Usage: prospect_discovery.py session <query> [--count N]")
+            sys.exit(1)
+
+        # Parse count flag
+        count = 0
+        if "--count" in sys.argv:
+            idx = sys.argv.index("--count")
+            count = int(sys.argv[idx + 1])
+            # Remove count args from query
+            query_args = [a for i, a in enumerate(sys.argv[2:]) if i + 2 != idx and i + 2 != idx + 1]
+            query = " ".join(query_args)
+        else:
+            query = " ".join(sys.argv[2:])
+
+        session = discovery.create_session(query, expected_count=count)
         print(json.dumps(session, indent=2))
 
     elif command == "add":

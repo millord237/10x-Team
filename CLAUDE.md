@@ -159,6 +159,71 @@ All commands/skills must read from USER's project, never hardcode values:
 
 ---
 
+## MCP Server Usage Guidelines
+
+**CRITICAL:** Select the appropriate MCP server based on task requirements.
+
+### Exa MCP (`exa-mcp-server`)
+**Use for:** Quick searches, fast responses, basic lookups
+
+| Use Case | Example Query |
+|----------|---------------|
+| Quick company lookup | "What does Acme Corp do?" |
+| Fast LinkedIn search | "Find 5 marketers at Google" |
+| Simple web search | "Latest trends in SaaS marketing" |
+| Basic research | "Who is the CEO of Stripe?" |
+
+**Characteristics:**
+- Fast response times (seconds)
+- Good for exploratory searches
+- Limited depth, broad coverage
+- Best for initial discovery
+
+### Websets MCP (`websets-mcp-server`)
+**Use for:** Deep research, exhaustive prospect lists, B2B lead generation
+
+| Use Case | Example Query |
+|----------|---------------|
+| Prospect list building | "Find 50 SaaS founders in fintech" |
+| Deep LinkedIn research | "Marketing directors at Series B startups" |
+| Enriched lead data | "CTOs at AI companies with 50-200 employees" |
+| Competitor analysis | "All competitors of Notion with funding" |
+
+**Characteristics:**
+- Exhaustive, thorough results
+- AI-powered enrichment
+- Verified contact information
+- Best for outreach campaigns
+
+### Decision Matrix
+
+```
+IF query needs:
+  - Quick answer, few results → Use EXA
+  - Deep research, many results → Use WEBSETS
+  - Basic company info → Use EXA
+  - Prospect list for outreach → Use WEBSETS
+  - Exploratory search → Use EXA
+  - Campaign-ready leads → Use WEBSETS
+```
+
+### Auto-Selection Rules
+
+The orchestrator MUST automatically select:
+
+1. **Exa MCP** when user says:
+   - "quick search", "find a few", "lookup", "what is"
+   - Numbers < 10 prospects
+   - General information queries
+
+2. **Websets MCP** when user says:
+   - "find prospects", "lead list", "outreach list"
+   - Numbers >= 10 prospects
+   - "detailed", "enriched", "verified"
+   - B2B lead generation tasks
+
+---
+
 ## Skill Categories
 
 ### Marketing
