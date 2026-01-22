@@ -6,6 +6,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## CRITICAL: First-Time Setup Check
+
+**DO NOT DELETE THIS FILE OR .setup-status.json**
+
+Before proceeding with any task, CHECK if the environment is set up:
+
+```
+IF file ".setup-status.json" exists AND "installed" = true:
+    → Environment is ready, proceed with tasks
+ELSE:
+    → Tell user to run setup first:
+      Windows: .\install.ps1
+      Linux/Mac: chmod +x setup.sh && ./setup.sh
+```
+
+The setup installs:
+- Python 3.12+ with virtual environment
+- Node.js 18+ with npm
+- All Python dependencies (requirements.txt)
+- All Node.js dependencies
+- Marketing Dashboard
+- TLDraw Canvas
+- Output directories
+
+---
+
 ALWAYS activate `claude-code` skill before starting any implementation.
 
 ## Project: 10x Team
@@ -15,23 +41,113 @@ ALWAYS activate `claude-code` skill before starting any implementation.
 **Repository:** https://github.com/anit-1to10x/10x-Team
 **Target Users:** Indie hackers, small marketing teams, SMB marketing managers
 
-## What We're Building (CRITICAL)
+---
 
-**The deliverable is the `.claude/` folder itself** - a reusable kit users install in THEIR projects.
+## Architecture: Claude Code as the Brain
+
+Claude Code is the central intelligence (orchestrator) that:
+1. Analyzes user requests
+2. Identifies required skills and agents
+3. Asks ALL clarification questions BEFORE starting
+4. Creates workflow templates
+5. Visualizes workflows in TLDraw canvas
+6. Executes workflows AUTONOMOUSLY after approval
+7. Generates outputs in multiple formats (PDF, PPT, JSON)
+
+### Orchestrator Agent
+Location: `.claude/agents/orchestrator.md`
+
+The Orchestrator coordinates all other agents and skills. It:
+- Parses natural language requests
+- Chains multiple skills together
+- Manages workflow lifecycle
+- Handles errors gracefully
+- Produces final deliverables
+
+---
+
+## Autonomous Workflow System
+
+### Workflow Lifecycle
 
 ```
-OUTPUT: ./10x-Team/.claude/
-        ├── agents/      # Marketing subagents
-        ├── commands/    # Slash commands
-        ├── skills/      # Domain knowledge (including outreach, landing-page, browser-ext)
-        ├── workflows/   # Process definitions
-        ├── templates/   # Message templates (108 outreach templates)
-        └── hooks/       # Automation hooks
+USER REQUEST
+    ↓
+[1] ANALYZE - Parse request, identify skills
+    ↓
+[2] PLAN - Create workflow template (JSON)
+    ↓
+[3] CLARIFY - Ask ALL questions UPFRONT (not during execution)
+    ↓
+[4] VISUALIZE - Show in TLDraw canvas (port 3001)
+    ↓
+[5] APPROVE - User confirms workflow
+    ↓
+[6] EXECUTE - Run autonomously (NO interruptions)
+    ↓
+[7] OUTPUT - Generate PDF, PPT, JSON, MD
 ```
 
-**NOT building:** A specific marketing project with hardcoded brand values.
+### Key Commands
 
-### Key Principle: Dynamic Context
+| Command | Description |
+|---------|-------------|
+| `/workflow create <desc>` | Create workflow from description |
+| `/workflow execute <id>` | Execute approved workflow |
+| `/workflow canvas <id>` | Visualize in TLDraw |
+| `/outreach` | Multi-platform outreach |
+| `/landing-page` | Landing page creation |
+| `/campaign:email` | Email campaigns |
+| `/browser` | Browser automation |
+
+---
+
+## Project Structure
+
+```
+10x-Team/
+├── .claude/                    ← KIT OUTPUT (core toolkit)
+│   ├── agents/                 ← 40+ agents including orchestrator
+│   ├── commands/               ← 150+ slash commands
+│   ├── skills/                 ← 75+ integrated skills
+│   │   ├── outreach/           ← Multi-platform outreach
+│   │   ├── landing-page/       ← Landing page generator
+│   │   ├── workflow-engine/    ← Autonomous workflow execution
+│   │   └── [marketing skills]  ← Content, SEO, campaigns
+│   ├── templates/              ← 108 message templates
+│   ├── workflows/              ← Process definitions
+│   └── hooks/                  ← Automation hooks
+├── canvas/                     ← TLDraw workflow designer
+├── browser-extension/          ← Chrome/Edge extension
+├── output/                     ← Generated outputs
+│   ├── workflows/              ← Workflow results
+│   ├── reports/                ← Generated reports
+│   ├── pdfs/                   ← PDF exports
+│   └── presentations/          ← PPT exports
+├── docs/                       ← Documentation
+├── assets/                     ← Brand assets & examples
+├── install.ps1                 ← Windows setup script
+├── setup.sh                    ← Linux/Mac setup script
+├── requirements.txt            ← Python dependencies
+└── CLAUDE.md                   ← This file
+```
+
+---
+
+## Apps & Ports
+
+| App | Port | Description | Start Command |
+|-----|------|-------------|---------------|
+| Marketing Dashboard | 3000 | Vue 3 campaign management | `npm run dashboard` |
+| TLDraw Canvas | 3001 | Visual workflow designer | `npm run canvas` |
+| WebSocket Server | 3002 | Outreach automation | `npm run websocket` |
+| API Server | 3003 | Backend services | - |
+
+Start all: `npm run start:all` or `.\start-services.ps1`
+
+---
+
+## Key Principle: Dynamic Context
 
 All commands/skills must read from USER's project, never hardcode values:
 
@@ -41,105 +157,75 @@ All commands/skills must read from USER's project, never hardcode values:
 | `font: Inter` hardcoded | Extract via `inject-brand-context.cjs` |
 | Specific company voice | Parse user's brand voice docs |
 
-### Brand Injection Pattern
-
-```
-User runs command → inject-brand-context.cjs → user's docs/ → dynamic prompt
-```
-
-**Script:** `.claude/skills/brand-guidelines/scripts/inject-brand-context.cjs`
-- Reads: `docs/brand-guidelines.md` (user's file)
-- Outputs: Brand context for prompt injection
-- Fallback: Graceful message if no brand docs exist
-
-### When Building Kit Components
-
-1. **Commands**: Use `inject-brand-context.cjs` for brand-aware features
-2. **Skills**: Reference patterns, not specific values.
-   - When scripts got errors, analyze and fix them.
-   - When SKILL.md or references got outdated, use `research` and `docs-seeker` skills to research and update them.
-3. **Agents**: Activate skills that read user context
-4. **Templates**: Use `{{placeholders}}` not hardcoded values
-
 ---
 
-## Project Structure
+## Skill Categories
 
-```
-10x-Team/
-├── .claude/                    ← KIT OUTPUT (what we're building)
-│   ├── agents/                 ← Marketing subagents
-│   ├── commands/               ← Slash commands (e.g., /brand:update)
-│   ├── skills/                 ← Domain knowledge & scripts
-│   │   ├── outreach/           ← Multi-platform outreach (NEW)
-│   │   ├── landing-page/       ← Landing page generator (NEW)
-│   │   └── browser-ext/        ← Browser automation (NEW)
-│   ├── templates/              ← 108 message templates (NEW)
-│   ├── workflows/              ← Process definitions
-│   └── hooks/                  ← Automation hooks
-├── canvas/                     ← TLDraw workflow designer (NEW)
-├── browser-extension/          ← Chrome/Edge extension (NEW)
-├── docs/                       ← Example user docs (for testing)
-├── assets/                     ← Example assets (for testing)
-└── CLAUDE.md                   ← This file
-```
+### Marketing
+- `content-marketing` - Content creation
+- `copywriting` - Conversion copy
+- `email-marketing` - Email sequences
+- `seo-optimization` - SEO analysis
+- `campaign-management` - Campaign planning
 
-**REMEMBER:**
-- **All new skills, agents, commands → go to `.claude/`**
-- **docs/, assets/ are example/test files** - they simulate a user's project
-- **Scripts must be dynamic** - read from user's `docs/`, never hardcode values
+### Outreach
+- `outreach/discovery-engine` - AI prospect discovery
+- `outreach/linkedin-adapter` - LinkedIn automation
+- `outreach/twitter-adapter` - Twitter automation
+- `outreach/instagram-adapter` - Instagram automation
+- `outreach/workflow-engine` - Multi-step sequences
 
----
+### Landing Page
+- `landing-page` - 6-agent workflow for landing pages
 
-## Apps & Ports
+### Design
+- `design` - Brand and visual design
+- `ai-multimodal` - AI image/video generation
 
-| App | Port | Description |
-|-----|------|-------------|
-| Marketing Dashboard | 3000 | Vue 3 campaign management |
-| TLDraw Canvas | 3001 | Visual workflow designer |
-| WebSocket Server | 3002 | Outreach automation |
-| API Server | 3003 | Backend services |
+### Workflow
+- `workflow-engine` - Autonomous workflow execution
 
 ---
-
-## Role & Responsibilities
-
-Your role is to analyze user marketing requirements, delegate tasks to appropriate marketing-focused sub-agents, and ensure cohesive delivery of marketing assets and campaigns that meet brand guidelines and conversion goals.
 
 ## Workflows
 
 - Primary workflow: `./.claude/workflows/primary-workflow.md`
 - Development rules: `./.claude/workflows/development-rules.md`
 - Orchestration protocols: `./.claude/workflows/orchestration-protocol.md`
-- Documentation management: `./.claude/workflows/documentation-management.md`
-- And other workflows: `./.claude/workflows/*`
 
-**IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task during the process.
-**IMPORTANT:** You must follow strictly the development rules in `./.claude/workflows/development-rules.md` file.
-**IMPORTANT:** Before you plan or proceed any implementation, always read the `./README.md` file first to get context.
-**IMPORTANT:** Sacrifice grammar for the sake of concision when writing reports.
-**IMPORTANT:** In reports, list any unresolved questions at the end, if any.
-**IMPORTANT**: Date format is configured in `.ck.json` and injected by session hooks via `$CK_PLAN_DATE_FORMAT` env var. Use this format for plan/report naming.
+**IMPORTANT:** Analyze the skills catalog and activate the skills that are needed for the task.
+**IMPORTANT:** For multi-step tasks, use the workflow-engine for autonomous execution.
+**IMPORTANT:** Always ask ALL clarification questions BEFORE starting execution.
 
-## Documentation Management
+---
 
-We keep all important docs in `./docs` folder and keep updating them, structure like below:
+## Output Formats
 
+The system can generate outputs in:
+- **JSON** - Raw data and results
+- **PDF** - Professional reports (requires reportlab)
+- **PPT** - Slide presentations (requires python-pptx)
+- **Markdown** - Documentation
+
+Outputs are saved to: `output/workflows/<workflow_id>/`
+
+---
+
+## Virtual Environment
+
+All Python scripts MUST run in the virtual environment:
+
+```bash
+# Windows
+.\.venv\Scripts\Activate.ps1
+
+# Linux/Mac
+source .venv/bin/activate
 ```
-./docs
-├── project-overview-pdr.md
-├── marketing-overview.md
-├── brand-guidelines.md
-├── design-guidelines.md
-├── agent-catalog.md
-├── skill-catalog.md
-├── command-catalog.md
-├── codebase-summary.md
-├── system-architecture.md
-└── project-roadmap.md
-```
 
-**IMPORTANT:** *MUST READ* and *MUST COMPLY* all *INSTRUCTIONS* in project `./CLAUDE.md`, especially *WORKFLOWS* section is *CRITICALLY IMPORTANT*, this rule is *MANDATORY. NON-NEGOTIABLE. NO EXCEPTIONS. MUST REMEMBER AT ALL TIMES!!!*
+---
+
+**IMPORTANT:** *MUST READ* and *MUST COMPLY* all *INSTRUCTIONS* in this file.
 
 ---
 

@@ -1,0 +1,11 @@
+{
+    "installed": false,
+    "installed_at": null,
+    "python_version": null,
+    "node_version": null,
+    "npm_version": null,
+    "venv_path": null,
+    "platform": null,
+    "installed_by": null,
+    "_comment": "DO NOT DELETE THIS FILE. Run install.ps1 (Windows) or setup.sh (Linux/Mac) to complete setup."
+}

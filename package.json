@@ -6,6 +6,13 @@
   "scripts": {
     "test": "echo \"Warning: no test specified\" && exit 0",
     "lint": "echo \"Linting passed\"",
+    "setup": "node scripts/setup.js",
+    "setup:check": "node scripts/check-setup.js",
+    "dashboard": "cd .claude/skills/marketing-dashboard && npm run dev",
+    "canvas": "cd canvas && npm run dev",
+    "websocket": "node canvas/server.js",
+    "start:all": "npm-run-all --parallel dashboard canvas websocket",
+    "install:all": "npm install && cd canvas && npm install && cd ../.claude/skills/marketing-dashboard && npm install",
     "semantic-release": "semantic-release",
     "prepare": "husky install || true"
   },
