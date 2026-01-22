@@ -1,0 +1,95 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schema/plugin.schema.json",
+  "name": "10x-team",
+  "displayName": "10x Team - Marketing Automation Toolkit",
+  "version": "1.0.0",
+  "description": "Comprehensive sales and marketing automation toolkit using Claude Code subagent orchestration. Enables autonomous marketing workflows for content creation, campaign management, SEO optimization, lead generation, and multi-platform outreach.",
+  "author": {
+    "name": "Team 10x.in",
+    "url": "https://10x.in"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Anit-1to10x/10x-Team"
+  },
+  "license": "MIT",
+  "main": ".claude/agents/orchestrator.md",
+  "keywords": [
+    "marketing",
+    "automation",
+    "sales",
+    "outreach",
+    "content",
+    "seo",
+    "email",
+    "linkedin",
+    "twitter",
+    "instagram",
+    "landing-page",
+    "workflow"
+  ],
+  "capabilities": {
+    "agents": true,
+    "commands": true,
+    "skills": true,
+    "workflows": true,
+    "templates": true,
+    "hooks": true,
+    "mcp": true
+  },
+  "entryPoints": {
+    "agents": ".claude/agents",
+    "commands": ".claude/commands",
+    "skills": ".claude/skills",
+    "workflows": ".claude/workflows",
+    "templates": ".claude/templates",
+    "hooks": ".claude/hooks"
+  },
+  "mcpServers": {
+    "configFile": ".claude/.mcp.json.example"
+  },
+  "settings": {
+    "autoActivateSkills": true,
+    "defaultWorkflowFormat": ["json", "md", "png"],
+    "outputDirectory": "output"
+  },
+  "apps": [
+    {
+      "name": "Marketing Dashboard",
+      "description": "Vue 3 campaign management dashboard",
+      "port": 3000,
+      "startCommand": "npm run dashboard",
+      "type": "web"
+    },
+    {
+      "name": "TLDraw Canvas",
+      "description": "Visual workflow designer",
+      "port": 3001,
+      "startCommand": "npm run canvas",
+      "type": "web"
+    },
+    {
+      "name": "WebSocket Server",
+      "description": "Real-time automation communication",
+      "port": 3002,
+      "startCommand": "npm run websocket",
+      "type": "server"
+    }
+  ],
+  "browserExtension": {
+    "name": "10X.in Universal Browser Automation",
+    "path": "browser-extension",
+    "manifest": "browser-extension/manifest.json"
+  },
+  "setup": {
+    "windows": "install.ps1",
+    "unix": "setup.sh",
+    "statusFile": ".setup-status.json"
+  },
+  "dependencies": {
+    "python": ">=3.12",
+    "node": ">=18",
+    "npm": ">=9"
+  },
+  "developed_by": "Team 10x.in"
+}

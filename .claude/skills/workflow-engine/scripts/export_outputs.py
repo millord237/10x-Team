@@ -29,6 +29,12 @@ try:
 except ImportError:
     HAS_PPTX = False
 
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    HAS_PILLOW = True
+except ImportError:
+    HAS_PILLOW = False
+
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 
 
@@ -295,6 +301,227 @@ class OutputExporter:
         print(f"PPT exported: {output_file}")
         return str(output_file)
 
+    def export_png(self) -> str:
+        """Export workflow as PNG diagram."""
+        if not HAS_PILLOW:
+            print("Pillow not installed. Install with: pip install Pillow")
+            return None
+
+        output_file = self.workflow_dir / "workflow_diagram.png"
+
+        # Calculate dimensions
+        step_count = len(self.workflow["steps"])
+        width = 1200
+        header_height = 200
+        step_height = 120
+        footer_height = 80
+        height = header_height + (step_count * step_height) + footer_height
+
+        # Create image
+        img = Image.new('RGB', (width, height), color='#FFFFFF')
+        draw = ImageDraw.Draw(img)
+
+        # Try to load a font, fallback to default
+        try:
+            title_font = ImageFont.truetype("arial.ttf", 32)
+            heading_font = ImageFont.truetype("arial.ttf", 20)
+            body_font = ImageFont.truetype("arial.ttf", 14)
+        except:
+            title_font = ImageFont.load_default()
+            heading_font = ImageFont.load_default()
+            body_font = ImageFont.load_default()
+
+        # Colors
+        primary_color = '#1a1a2e'
+        secondary_color = '#16213e'
+        accent_color = '#0f3460'
+        success_color = '#00a878'
+        pending_color = '#f4a261'
+        border_color = '#e0e0e0'
+
+        # Draw header background
+        draw.rectangle([0, 0, width, header_height], fill='#f8f9fa')
+
+        # Draw title
+        draw.text((50, 40), self.workflow["name"], fill=primary_color, font=title_font)
+
+        # Draw workflow ID and status
+        draw.text((50, 90), f"Workflow ID: {self.workflow['workflow_id']}", fill=secondary_color, font=body_font)
+        status = self.workflow["status"]
+        status_color = success_color if status == "completed" else pending_color
+        draw.text((50, 115), f"Status: {status}", fill=status_color, font=body_font)
+        draw.text((50, 140), f"Steps: {step_count}", fill=secondary_color, font=body_font)
+
+        # Draw steps
+        y_offset = header_height + 20
+        for i, step in enumerate(self.workflow["steps"]):
+            # Step box
+            box_x = 50
+            box_y = y_offset
+            box_width = width - 100
+            box_height = step_height - 20
+
+            # Determine step color based on status
+            step_status = step.get("status", "pending")
+            if step_status == "completed":
+                box_color = '#e8f5e9'
+                border = success_color
+            elif step_status == "in_progress":
+                box_color = '#fff3e0'
+                border = pending_color
+            else:
+                box_color = '#f5f5f5'
+                border = border_color
+
+            # Draw step box
+            draw.rectangle([box_x, box_y, box_x + box_width, box_y + box_height], fill=box_color, outline=border, width=2)
+
+            # Step number circle
+            circle_x = box_x + 30
+            circle_y = box_y + box_height // 2
+            circle_radius = 18
+            draw.ellipse([circle_x - circle_radius, circle_y - circle_radius, circle_x + circle_radius, circle_y + circle_radius], fill=accent_color)
+            draw.text((circle_x - 6, circle_y - 8), str(i + 1), fill='white', font=body_font)
+
+            # Step name
+            draw.text((circle_x + 40, box_y + 15), step["name"], fill=primary_color, font=heading_font)
+
+            # Step skill and status
+            draw.text((circle_x + 40, box_y + 45), f"Skill: {step['skill']}", fill=secondary_color, font=body_font)
+            draw.text((circle_x + 40, box_y + 65), f"Status: {step_status}", fill=status_color if step_status != "pending" else secondary_color, font=body_font)
+
+            # Draw connector line
+            if i < step_count - 1:
+                line_x = width // 2
+                line_y_start = box_y + box_height
+                line_y_end = box_y + step_height
+                draw.line([(line_x, line_y_start), (line_x, line_y_end)], fill=border_color, width=2)
+                # Arrow
+                draw.polygon([(line_x - 6, line_y_end - 8), (line_x + 6, line_y_end - 8), (line_x, line_y_end)], fill=border_color)
+
+            y_offset += step_height
+
+        # Draw footer
+        footer_y = height - footer_height + 20
+        draw.rectangle([0, height - footer_height, width, height], fill='#f8f9fa')
+        draw.text((50, footer_y), "Developed by Team 10x.in | https://10x.in", fill=secondary_color, font=body_font)
+
+        # Save
+        img.save(output_file)
+        print(f"PNG exported: {output_file}")
+        return str(output_file)
+
+    def export_svg(self) -> str:
+        """Export workflow as SVG diagram."""
+        output_file = self.workflow_dir / "workflow_diagram.svg"
+
+        # Calculate dimensions
+        step_count = len(self.workflow["steps"])
+        width = 1200
+        header_height = 200
+        step_height = 120
+        footer_height = 80
+        height = header_height + (step_count * step_height) + footer_height
+
+        # SVG content
+        svg_content = f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .title {{ font-family: Arial, sans-serif; font-size: 32px; font-weight: bold; fill: #1a1a2e; }}
+      .heading {{ font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; fill: #1a1a2e; }}
+      .body {{ font-family: Arial, sans-serif; font-size: 14px; fill: #16213e; }}
+      .small {{ font-family: Arial, sans-serif; font-size: 12px; fill: white; }}
+      .success {{ fill: #00a878; }}
+      .pending {{ fill: #f4a261; }}
+    </style>
+  </defs>
+
+  <!-- Header Background -->
+  <rect x="0" y="0" width="{width}" height="{header_height}" fill="#f8f9fa"/>
+
+  <!-- Title -->
+  <text x="50" y="60" class="title">{self._escape_xml(self.workflow["name"])}</text>
+
+  <!-- Metadata -->
+  <text x="50" y="100" class="body">Workflow ID: {self.workflow["workflow_id"]}</text>
+  <text x="50" y="125" class="body {'success' if self.workflow["status"] == 'completed' else 'pending'}">Status: {self.workflow["status"]}</text>
+  <text x="50" y="150" class="body">Steps: {step_count}</text>
+
+'''
+
+        y_offset = header_height + 20
+        for i, step in enumerate(self.workflow["steps"]):
+            step_status = step.get("status", "pending")
+            box_x = 50
+            box_y = y_offset
+            box_width = width - 100
+            box_height = step_height - 20
+
+            # Colors based on status
+            if step_status == "completed":
+                box_fill = "#e8f5e9"
+                border_color = "#00a878"
+            elif step_status == "in_progress":
+                box_fill = "#fff3e0"
+                border_color = "#f4a261"
+            else:
+                box_fill = "#f5f5f5"
+                border_color = "#e0e0e0"
+
+            # Step box
+            svg_content += f'''
+  <!-- Step {i + 1} -->
+  <rect x="{box_x}" y="{box_y}" width="{box_width}" height="{box_height}" fill="{box_fill}" stroke="{border_color}" stroke-width="2" rx="8"/>
+
+  <!-- Step Number -->
+  <circle cx="{box_x + 30}" cy="{box_y + box_height // 2}" r="18" fill="#0f3460"/>
+  <text x="{box_x + 30}" y="{box_y + box_height // 2 + 5}" class="small" text-anchor="middle">{i + 1}</text>
+
+  <!-- Step Content -->
+  <text x="{box_x + 70}" y="{box_y + 30}" class="heading">{self._escape_xml(step["name"])}</text>
+  <text x="{box_x + 70}" y="{box_y + 55}" class="body">Skill: {step["skill"]}</text>
+  <text x="{box_x + 70}" y="{box_y + 75}" class="body">Status: {step_status}</text>
+'''
+
+            # Connector line
+            if i < step_count - 1:
+                line_x = width // 2
+                line_y_start = box_y + box_height
+                line_y_end = box_y + step_height - 5
+                svg_content += f'''
+  <line x1="{line_x}" y1="{line_y_start}" x2="{line_x}" y2="{line_y_end}" stroke="#e0e0e0" stroke-width="2"/>
+  <polygon points="{line_x - 6},{line_y_end - 8} {line_x + 6},{line_y_end - 8} {line_x},{line_y_end}" fill="#e0e0e0"/>
+'''
+
+            y_offset += step_height
+
+        # Footer
+        footer_y = height - footer_height
+        svg_content += f'''
+  <!-- Footer -->
+  <rect x="0" y="{footer_y}" width="{width}" height="{footer_height}" fill="#f8f9fa"/>
+  <text x="50" y="{footer_y + 35}" class="body">Developed by Team 10x.in | https://10x.in</text>
+
+</svg>'''
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(svg_content)
+
+        print(f"SVG exported: {output_file}")
+        return str(output_file)
+
+    def _escape_xml(self, text: str) -> str:
+        """Escape XML special characters."""
+        if not text:
+            return ""
+        return (str(text)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace('"', "&quot;")
+                .replace("'", "&apos;"))
+
     def export_markdown(self) -> str:
         """Export workflow as Markdown."""
         output_file = self.workflow_dir / "final_output.md"
@@ -354,7 +581,7 @@ class OutputExporter:
     def export_all(self, formats: list = None) -> dict:
         """Export to all requested formats."""
         if formats is None:
-            formats = ["json", "md"]  # Default formats that don't require extra deps
+            formats = ["json", "md", "png"]  # Default formats
 
         results = {}
 
@@ -367,6 +594,10 @@ class OutputExporter:
                 results["ppt"] = self.export_ppt()
             elif fmt == "md" or fmt == "markdown":
                 results["md"] = self.export_markdown()
+            elif fmt == "png":
+                results["png"] = self.export_png()
+            elif fmt == "svg":
+                results["svg"] = self.export_svg()
 
         return results
 
@@ -374,8 +605,8 @@ class OutputExporter:
 def main():
     if len(sys.argv) < 2:
         print("Usage: python export_outputs.py <workflow_path> [formats]")
-        print("Formats: json, pdf, ppt, md (comma-separated)")
-        print("Example: python export_outputs.py workflow.json json,pdf,ppt")
+        print("Formats: json, pdf, ppt, md, png, svg (comma-separated)")
+        print("Example: python export_outputs.py workflow.json json,pdf,ppt,png,svg")
         sys.exit(1)
 
     workflow_path = sys.argv[1]
