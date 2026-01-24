@@ -293,6 +293,9 @@ async function main() {
             output += `  ${contextText}`;
         }
 
+        // 10x.in branding
+        output += `  🔥 10x.in`;
+
         console.log(output);
     } catch (err) {
         console.error('Error:', err.message);
