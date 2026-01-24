@@ -13,10 +13,6 @@
           {
             "type": "command",
             "command": "node .claude/hooks/session-init.cjs"
-          },
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-init.cjs"
           }
         ]
       }
@@ -55,10 +51,6 @@
           {
             "type": "command",
             "command": "node .claude/hooks/approval-workflow.cjs"
-          },
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-init.cjs"
           }
         ]
       }
@@ -69,14 +61,6 @@
           {
             "type": "command",
             "command": "node .claude/hooks/dev-rules-reminder.cjs"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/dev-rules-reminder.cjs"
           }
         ]
       }
@@ -91,11 +75,7 @@
           },
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/scout-block.cjs"
-          },
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/privacy-block.cjs"
+            "command": "node .claude/hooks/privacy-block.cjs"
           }
         ]
       }
@@ -106,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/write-compact-marker.cjs"
+            "command": "node .claude/hooks/write-compact-marker.cjs"
           }
         ]
       }
@@ -117,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-end.cjs"
+            "command": "node .claude/hooks/session-end.cjs"
           }
         ]
       }
