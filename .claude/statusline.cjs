@@ -283,18 +283,13 @@ async function main() {
             output += `  💵 $${costUSDNum.toFixed(4)}`;
         }
 
-        // Lines changed
-        if ((linesAdded > 0 || linesRemoved > 0)) {
-            output += `  📝 +${linesAdded} -${linesRemoved}`;
-        }
-
         // Context window usage (Claude Code v2.0.65+)
         if (contextText) {
             output += `  ${contextText}`;
         }
 
         // 10x.in branding
-        output += `  🔥 10x.in`;
+        output += `  🔥 Developed by 10x.in`;
 
         console.log(output);
     } catch (err) {
