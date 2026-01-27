@@ -12,9 +12,16 @@ const crypto = require('crypto');
 const app = express();
 const PORT = 3002;
 
-// Enable CORS for canvas app
-app.use(cors());
-app.use(express.json());
+// Restrict CORS to localhost by default
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173').split(',');
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS: origin not allowed'), false);
+  }
+}));
+app.use(express.json({ limit: '1mb' }));
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, '../../output/uploads');
@@ -124,7 +131,10 @@ app.post('/api/upload/multiple', upload.array('files', 10), (req, res) => {
 // Delete file endpoint
 app.delete('/api/upload/:filename', (req, res) => {
   try {
-    const filename = req.params.filename;
+    const filename = req.params.filename.replace(/[\/\\]/g, '').replace(/\.\./g, '').replace(/\0/g, '');
+    if (!filename) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
     const filePath = path.join(uploadsDir, filename);
 
     if (fs.existsSync(filePath)) {

@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,9 +14,213 @@ const app = express();
 const HTTP_PORT = process.env.PORT || 3000;
 const WS_PORT = process.env.WS_PORT || 3001;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// JWT Configuration
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+const JWT_EXPIRY = '24h';
+const AUTH_TIMEOUT_MS = 10000; // 10 seconds to authenticate
+
+// Master key for token generation (required in production)
+const API_MASTER_KEY = process.env.API_MASTER_KEY || null;
+
+// Revoked tokens persistence
+const REVOKED_TOKENS_PATH = path.join(__dirname, '..', 'output', 'revoked-tokens.json');
+
+// Rate limiter for auth endpoints
+const authRateLimiter = {
+  attempts: new Map(), // ip -> { count, resetTime }
+  maxAttempts: 5,
+  windowMs: 60 * 1000, // 1 minute
+
+  check(ip) {
+    const now = Date.now();
+    const entry = this.attempts.get(ip);
+
+    if (!entry || now > entry.resetTime) {
+      this.attempts.set(ip, { count: 1, resetTime: now + this.windowMs });
+      return true;
+    }
+
+    if (entry.count >= this.maxAttempts) {
+      return false;
+    }
+
+    entry.count++;
+    return true;
+  }
+};
+
+// Simple JWT implementation (cross-platform, no external dependencies)
+const jwtUtils = {
+  base64UrlEncode(str) {
+    return Buffer.from(str)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+  },
+
+  base64UrlDecode(str) {
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    return Buffer.from(str, 'base64').toString();
+  },
+
+  sign(payload, secret, expiresIn = '24h') {
+    const header = { alg: 'HS256', typ: 'JWT' };
+
+    let expiryMs = 24 * 60 * 60 * 1000;
+    if (typeof expiresIn === 'string') {
+      const match = expiresIn.match(/^(\d+)(h|m|s|d)$/);
+      if (match) {
+        const value = parseInt(match[1]);
+        const unit = match[2];
+        const multipliers = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
+        expiryMs = value * multipliers[unit];
+      }
+    }
+
+    const now = Date.now();
+    const tokenPayload = {
+      ...payload,
+      iat: Math.floor(now / 1000),
+      exp: Math.floor((now + expiryMs) / 1000)
+    };
+
+    const headerB64 = this.base64UrlEncode(JSON.stringify(header));
+    const payloadB64 = this.base64UrlEncode(JSON.stringify(tokenPayload));
+
+    const signature = crypto
+      .createHmac('sha256', secret)
+      .update(`${headerB64}.${payloadB64}`)
+      .digest('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+
+    return `${headerB64}.${payloadB64}.${signature}`;
+  },
+
+  verify(token, secret) {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+
+      const [headerB64, payloadB64, signature] = parts;
+
+      const expectedSig = crypto
+        .createHmac('sha256', secret)
+        .update(`${headerB64}.${payloadB64}`)
+        .digest('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+
+      if (signature !== expectedSig) return null;
+
+      const payload = JSON.parse(this.base64UrlDecode(payloadB64));
+
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        return null;
+      }
+
+      return payload;
+    } catch (e) {
+      return null;
+    }
+  }
+};
+
+// Token storage (for revocation) - load from disk
+const revokedTokens = new Set();
+(function loadRevokedTokens() {
+  try {
+    if (fs.existsSync(REVOKED_TOKENS_PATH)) {
+      const data = JSON.parse(fs.readFileSync(REVOKED_TOKENS_PATH, 'utf-8'));
+      if (Array.isArray(data)) {
+        data.forEach(t => revokedTokens.add(t));
+        console.log(`🔒 Loaded ${revokedTokens.size} revoked tokens from disk`);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load revoked tokens:', e);
+  }
+})();
+
+function persistRevokedTokens() {
+  try {
+    const outputDir = path.dirname(REVOKED_TOKENS_PATH);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    fs.writeFileSync(REVOKED_TOKENS_PATH, JSON.stringify([...revokedTokens], null, 2));
+  } catch (e) {
+    console.error('Failed to persist revoked tokens:', e);
+  }
+}
+
+// Permission definitions
+const PERMISSIONS = {
+  canvas: ['canvas.view', 'canvas.edit', 'canvas.command'],
+  workflow: ['workflow.create', 'workflow.execute', 'workflow.view', 'workflow.delete'],
+  extension: ['extension.command', 'extension.view'],
+  admin: ['admin.users', 'admin.settings']
+};
+
+// Role permissions
+const ROLE_PERMISSIONS = {
+  admin: [...PERMISSIONS.canvas, ...PERMISSIONS.workflow, ...PERMISSIONS.extension, ...PERMISSIONS.admin],
+  agent: [...PERMISSIONS.canvas, ...PERMISSIONS.workflow, ...PERMISSIONS.extension],
+  viewer: ['canvas.view', 'workflow.view', 'extension.view']
+};
+
+// Auth middleware for HTTP routes
+function authMiddleware(requiredPermission = null) {
+  return (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // Allow unauthenticated access if no JWT_SECRET is set in env (development mode)
+      if (!process.env.JWT_SECRET) {
+        req.user = { role: 'admin', permissions: ROLE_PERMISSIONS.admin };
+        return next();
+      }
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    if (revokedTokens.has(token)) {
+      return res.status(401).json({ error: 'Token revoked' });
+    }
+
+    const payload = jwtUtils.verify(token, JWT_SECRET);
+    if (!payload) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    if (requiredPermission) {
+      const userPermissions = payload.permissions || ROLE_PERMISSIONS[payload.role] || [];
+      if (!userPermissions.includes(requiredPermission)) {
+        return res.status(403).json({ error: 'Permission denied' });
+      }
+    }
+
+    req.user = payload;
+    next();
+  };
+}
+
+// Middleware - Restrict CORS to localhost by default
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173').split(',');
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS: origin not allowed'), false);
+  }
+}));
+app.use(express.json({ limit: '1mb' }));
 
 // Create HTTP server
 const server = createServer(app);
@@ -23,6 +228,23 @@ const server = createServer(app);
 // Create separate WebSocket server on different port
 const wsServer = createServer();
 const wss = new WebSocketServer({ server: wsServer, path: '/ws' });
+
+// Path traversal protection helper
+function sanitizeWorkflowName(name) {
+  return name.replace(/[\/\\]/g, '').replace(/\.\./g, '').replace(/\0/g, '');
+}
+
+// Video URL validation helper
+function isValidVideoUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+    if (/[;&|`$(){}[\]<>!#]/.test(url)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Store commands queue (for backwards compatibility)
 const commandsQueue = [];
@@ -44,13 +266,38 @@ wss.on('connection', (ws) => {
   console.log('✅ Client connected via WebSocket');
   clients.add(ws);
 
-  // Track client type
+  // Track client type and auth status
   ws.isExtension = false;
+  ws.isAuthenticated = false;
+  ws.user = null;
+
+  // Auth timeout - require authentication within 10 seconds
+  // Only enforce if JWT_SECRET is set (production mode)
+  let authTimeout = null;
+  if (process.env.JWT_SECRET) {
+    authTimeout = setTimeout(() => {
+      if (!ws.isAuthenticated) {
+        console.log('⏰ Client auth timeout - disconnecting');
+        ws.send(JSON.stringify({
+          type: 'auth-timeout',
+          message: 'Authentication required within 10 seconds',
+          timestamp: Date.now()
+        }));
+        ws.close(4001, 'Authentication timeout');
+      }
+    }, AUTH_TIMEOUT_MS);
+  } else {
+    // Development mode - auto-authenticate
+    ws.isAuthenticated = true;
+    ws.user = { role: 'admin', permissions: ROLE_PERMISSIONS.admin };
+  }
 
   // Send welcome message
   ws.send(JSON.stringify({
     type: 'connected',
     message: 'Connected to 10x-Team Canvas Server',
+    authRequired: !!process.env.JWT_SECRET,
+    authTimeout: AUTH_TIMEOUT_MS,
     timestamp: Date.now()
   }));
 
@@ -85,12 +332,27 @@ wss.on('connection', (ws) => {
 function handleWebSocketMessage(ws, message) {
   const { type } = message;
 
+  // Handle authentication first
+  if (type === 'authenticate') {
+    handleAuthentication(ws, message);
+    return;
+  }
+
+  // Check if authenticated (no bypass for extension-connected)
+  if (process.env.JWT_SECRET && !ws.isAuthenticated) {
+    ws.send(JSON.stringify({
+      type: 'auth-required',
+      message: 'Please authenticate first',
+      timestamp: Date.now()
+    }));
+    return;
+  }
+
   switch (type) {
     case 'extension-connected':
-      // Mark this client as extension
       ws.isExtension = true;
       extensionClients.add(ws);
-      clients.delete(ws); // Remove from canvas clients
+      clients.delete(ws);
       console.log('🔌 Extension client registered');
 
       ws.send(JSON.stringify({
@@ -101,12 +363,10 @@ function handleWebSocketMessage(ws, message) {
       break;
 
     case 'command-result':
-      // Handle command result from extension
       handleCommandResult(message);
       break;
 
     case 'activity-tracked':
-      // Store activity tracking data
       handleActivityTracked(message);
       break;
 
@@ -115,33 +375,58 @@ function handleWebSocketMessage(ws, message) {
   }
 }
 
+// Handle WebSocket authentication
+function handleAuthentication(ws, message) {
+  const { token } = message;
+
+  if (!token) {
+    ws.send(JSON.stringify({ type: 'auth-failed', error: 'No token provided', timestamp: Date.now() }));
+    return;
+  }
+
+  if (revokedTokens.has(token)) {
+    ws.send(JSON.stringify({ type: 'auth-failed', error: 'Token revoked', timestamp: Date.now() }));
+    return;
+  }
+
+  const payload = jwtUtils.verify(token, JWT_SECRET);
+  if (!payload) {
+    ws.send(JSON.stringify({ type: 'auth-failed', error: 'Invalid token', timestamp: Date.now() }));
+    return;
+  }
+
+  ws.isAuthenticated = true;
+  ws.user = payload;
+
+  console.log(`🔐 Client authenticated: ${payload.username || payload.userId}`);
+
+  ws.send(JSON.stringify({
+    type: 'auth-success',
+    user: { userId: payload.userId, username: payload.username, role: payload.role },
+    timestamp: Date.now()
+  }));
+}
+
 // Handle command result from extension
 function handleCommandResult(message) {
   const { commandId, success, result, error } = message;
 
   console.log(`📥 Command result received: ${commandId} - ${success ? 'Success' : 'Failed'}`);
 
-  // Resolve pending command if exists
   const pending = pendingCommands.get(commandId);
   if (pending) {
     clearTimeout(pending.timeout);
-
     if (success) {
       pending.resolve({ success: true, result });
     } else {
       pending.reject(new Error(error || 'Command failed'));
     }
-
     pendingCommands.delete(commandId);
   }
 
-  // Broadcast result to canvas clients
   broadcast({
     type: 'extension-command-result',
-    commandId,
-    success,
-    result,
-    error,
+    commandId, success, result, error,
     timestamp: Date.now()
   });
 }
@@ -152,21 +437,14 @@ function handleActivityTracked(message) {
 
   console.log(`📊 Activity tracked: ${activity.type}`);
 
-  // Add to memory log
-  activityLog.push({
-    ...activity,
-    timestamp: timestamp || Date.now()
-  });
+  activityLog.push({ ...activity, timestamp: timestamp || Date.now() });
 
-  // Keep only last 1000 activities in memory
   if (activityLog.length > 1000) {
     activityLog.shift();
   }
 
-  // Persist to file (async, non-blocking)
   saveActivityLog();
 
-  // Broadcast to canvas for real-time display
   broadcast({
     type: 'extension-activity',
     activity,
@@ -192,7 +470,7 @@ function saveActivityLog() {
 function broadcast(data) {
   const message = JSON.stringify(data);
   clients.forEach((client) => {
-    if (!client.isExtension && client.readyState === 1) { // 1 = OPEN
+    if (!client.isExtension && client.readyState === 1) {
       client.send(message);
     }
   });
@@ -208,8 +486,11 @@ function sendToExtension(data) {
   });
 }
 
-// API: Send command to canvas (from Claude Code)
-app.post('/api/canvas/command', (req, res) => {
+// ============================================
+// Canvas API (auth required)
+// ============================================
+
+app.post('/api/canvas/command', authMiddleware('canvas.command'), (req, res) => {
   const command = {
     id: `cmd-${++commandIdCounter}-${Date.now()}`,
     timestamp: Date.now(),
@@ -218,13 +499,11 @@ app.post('/api/canvas/command', (req, res) => {
 
   console.log('📤 Received command from Claude Code:', command.type);
 
-  // Add to queue (for polling fallback)
   commandsQueue.push(command);
   if (commandsQueue.length > 100) {
-    commandsQueue.shift(); // Keep only last 100 commands
+    commandsQueue.shift();
   }
 
-  // Broadcast via WebSocket
   broadcast(command);
 
   res.json({
@@ -235,8 +514,7 @@ app.post('/api/canvas/command', (req, res) => {
   });
 });
 
-// API: Batch commands (for sequential operations)
-app.post('/api/canvas/commands/batch', (req, res) => {
+app.post('/api/canvas/commands/batch', authMiddleware('canvas.command'), (req, res) => {
   const { commands: incomingCommands } = req.body;
 
   if (!Array.isArray(incomingCommands)) {
@@ -251,16 +529,12 @@ app.post('/api/canvas/commands/batch', (req, res) => {
 
   console.log(`📤 Received ${processedCommands.length} batch commands from Claude Code`);
 
-  // Add to queue
   commandsQueue.push(...processedCommands);
   while (commandsQueue.length > 100) {
     commandsQueue.shift();
   }
 
-  // Broadcast all commands
-  processedCommands.forEach(command => {
-    broadcast(command);
-  });
+  processedCommands.forEach(command => { broadcast(command); });
 
   res.json({
     success: true,
@@ -269,13 +543,10 @@ app.post('/api/canvas/commands/batch', (req, res) => {
   });
 });
 
-// API: Poll for commands (backwards compatibility)
-app.get('/api/canvas/commands', (req, res) => {
+app.get('/api/canvas/commands', authMiddleware('canvas.view'), (req, res) => {
   const { lastId } = req.query;
-
   let commands = commandsQueue;
 
-  // Filter commands after lastId
   if (lastId) {
     const lastIndex = commands.findIndex(cmd => cmd.id === lastId);
     if (lastIndex >= 0) {
@@ -283,21 +554,20 @@ app.get('/api/canvas/commands', (req, res) => {
     }
   }
 
-  res.json({
-    commands,
-    total: commandsQueue.length
-  });
+  res.json({ commands, total: commandsQueue.length });
 });
 
-// API: Clear all commands
-app.post('/api/canvas/clear', (req, res) => {
+app.post('/api/canvas/clear', authMiddleware('canvas.edit'), (req, res) => {
   commandsQueue.length = 0;
   broadcast({ type: 'clear', timestamp: Date.now() });
   res.json({ success: true });
 });
 
-// API: Send command to extension
-app.post('/api/extension/command', async (req, res) => {
+// ============================================
+// Extension API (auth required)
+// ============================================
+
+app.post('/api/extension/command', authMiddleware('extension.command'), async (req, res) => {
   const command = {
     id: `ext-cmd-${++commandIdCounter}-${Date.now()}`,
     timestamp: Date.now(),
@@ -306,50 +576,31 @@ app.post('/api/extension/command', async (req, res) => {
 
   console.log('📤 Sending command to extension:', command.type);
 
-  // Check if extension is connected
   if (extensionClients.size === 0) {
-    return res.status(503).json({
-      success: false,
-      error: 'No extension connected'
-    });
+    return res.status(503).json({ success: false, error: 'No extension connected' });
   }
 
-  // Send command to extension
   sendToExtension(command);
 
-  // Create promise that resolves when extension responds
-  const timeout = 30000; // 30 second timeout
+  const timeout = 30000;
   const promise = new Promise((resolve, reject) => {
     const timeoutId = setTimeout(() => {
       pendingCommands.delete(command.id);
       reject(new Error('Command timeout'));
     }, timeout);
 
-    pendingCommands.set(command.id, {
-      resolve,
-      reject,
-      timeout: timeoutId
-    });
+    pendingCommands.set(command.id, { resolve, reject, timeout: timeoutId });
   });
 
   try {
     const result = await promise;
-    res.json({
-      success: true,
-      commandId: command.id,
-      result
-    });
+    res.json({ success: true, commandId: command.id, result });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      commandId: command.id,
-      error: error.message
-    });
+    res.status(500).json({ success: false, commandId: command.id, error: error.message });
   }
 });
 
-// API: Get extension status
-app.get('/api/extension/status', (req, res) => {
+app.get('/api/extension/status', authMiddleware('extension.view'), (req, res) => {
   res.json({
     connected: extensionClients.size > 0,
     clients: extensionClients.size,
@@ -359,10 +610,8 @@ app.get('/api/extension/status', (req, res) => {
   });
 });
 
-// API: Get activity log
-app.get('/api/extension/activities', (req, res) => {
+app.get('/api/extension/activities', authMiddleware('extension.view'), (req, res) => {
   const { limit = 100, offset = 0 } = req.query;
-
   const start = parseInt(offset);
   const end = start + parseInt(limit);
 
@@ -374,22 +623,22 @@ app.get('/api/extension/activities', (req, res) => {
   });
 });
 
-// API: Clear activity log
-app.post('/api/extension/activities/clear', (req, res) => {
+app.post('/api/extension/activities/clear', authMiddleware('extension.command'), (req, res) => {
   activityLog.length = 0;
 
-  // Clear file
   fs.writeFile(activityLogPath, JSON.stringify([], null, 2), (err) => {
     if (err) {
       console.error('Failed to clear activity log:', err);
       return res.status(500).json({ error: 'Failed to clear activity log' });
     }
-
     res.json({ success: true, message: 'Activity log cleared' });
   });
 });
 
-// API: Get server status
+// ============================================
+// Server status (public)
+// ============================================
+
 app.get('/api/status', (req, res) => {
   res.json({
     status: 'running',
@@ -403,44 +652,36 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// API: Save workflow (from canvas)
-app.post('/api/workflow/save', (req, res) => {
+// ============================================
+// Workflow API (auth required + path traversal protection)
+// ============================================
+
+app.post('/api/workflow/save', authMiddleware('workflow.create'), (req, res) => {
   const { workflow, name, description } = req.body;
 
   if (!workflow) {
     return res.status(400).json({ error: 'Workflow data is required' });
   }
 
-  // Generate contextual workflow name
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   let workflowName = name;
 
   if (!workflowName) {
-    // Extract context from workflow
     const nodeCount = workflow.nodes?.length || 0;
     const platforms = new Set();
-
-    // Identify platforms used
-    workflow.nodes?.forEach(node => {
-      if (node.skillType) {
-        platforms.add(node.skillType);
-      }
-    });
-
-    const platformList = Array.from(platforms).slice(0, 3).join('-');
-    const platformStr = platformList || 'workflow';
-
-    // Create descriptive name: platform-nodes-timestamp
+    workflow.nodes?.forEach(node => { if (node.skillType) platforms.add(node.skillType); });
+    const platformStr = Array.from(platforms).slice(0, 3).join('-') || 'workflow';
     workflowName = `${platformStr}-${nodeCount}nodes-${timestamp}`;
   }
 
-  // Ensure output directory exists
+  // Sanitize workflow name
+  workflowName = sanitizeWorkflowName(workflowName);
+
   const outputDir = path.join(__dirname, '..', 'output', 'workflows');
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  // Enhanced workflow object with metadata
   const workflowWithMeta = {
     ...workflow,
     metadata: {
@@ -449,41 +690,31 @@ app.post('/api/workflow/save', (req, res) => {
       created: new Date().toISOString(),
       nodeCount: workflow.nodes?.length || 0,
       platforms: workflow.nodes?.map(n => n.skillType).filter(Boolean) || [],
-      status: 'pending', // pending, running, completed, failed
+      status: 'pending',
       executed: false,
       executionHistory: []
     }
   };
 
-  // Save workflow with timestamp and context
   const workflowPath = path.join(outputDir, `${workflowName}.json`);
   fs.writeFileSync(workflowPath, JSON.stringify(workflowWithMeta, null, 2));
 
-  // Save as latest.json with full metadata
   const latestPath = path.join(outputDir, 'latest.json');
   fs.writeFileSync(latestPath, JSON.stringify(workflowWithMeta, null, 2));
 
-  // Save to project root as workflow.json (quick access)
   const rootPath = path.join(__dirname, '..', 'workflow.json');
   fs.writeFileSync(rootPath, JSON.stringify(workflowWithMeta, null, 2));
 
-  // Update workflow index (for easy listing)
   const indexPath = path.join(outputDir, 'index.json');
   let index = { workflows: [] };
 
   if (fs.existsSync(indexPath)) {
-    try {
-      index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
-    } catch (e) {
-      console.error('Failed to read workflow index:', e);
-    }
+    try { index = JSON.parse(fs.readFileSync(indexPath, 'utf-8')); } catch (e) { console.error('Failed to read workflow index:', e); }
   }
 
-  // Add to index
   index.workflows = index.workflows || [];
   index.workflows.push({
-    name: workflowName,
-    path: workflowPath,
+    name: workflowName, path: workflowPath,
     created: workflowWithMeta.metadata.created,
     nodeCount: workflowWithMeta.metadata.nodeCount,
     platforms: workflowWithMeta.metadata.platforms,
@@ -491,7 +722,6 @@ app.post('/api/workflow/save', (req, res) => {
     description: workflowWithMeta.metadata.description
   });
 
-  // Keep only last 100 workflows in index
   if (index.workflows.length > 100) {
     index.workflows = index.workflows.slice(-100);
   }
@@ -508,22 +738,29 @@ app.post('/api/workflow/save', (req, res) => {
   });
 });
 
-// API: Process video URL (YouTube, LinkedIn, etc.)
-app.post('/api/video/process', async (req, res) => {
+app.post('/api/video/process', authMiddleware('canvas.command'), async (req, res) => {
   const { nodeId, url, videoPath } = req.body;
 
   if (!nodeId || (!url && !videoPath)) {
     return res.status(400).json({ error: 'nodeId and url or videoPath required' });
   }
 
+  // Validate URL to prevent command injection
+  if (url && !isValidVideoUrl(url)) {
+    return res.status(400).json({ error: 'Invalid video URL. Only http/https URLs without shell metacharacters are allowed.' });
+  }
+
+  // Validate videoPath
+  if (videoPath && (/[;&|`$(){}[\]<>!#]/.test(videoPath) || videoPath.includes('..'))) {
+    return res.status(400).json({ error: 'Invalid video path.' });
+  }
+
   console.log(`🎥 Processing video request: ${url || videoPath}`);
 
   try {
-    // Spawn Python video processor
     const { spawn } = await import('child_process');
     const { platform } = await import('os');
 
-    // Determine Python executable path (use venv if available)
     const venvPath = path.join(__dirname, '..', '.venv');
     let pythonCmd = 'python';
 
@@ -537,11 +774,7 @@ app.post('/api/video/process', async (req, res) => {
     }
 
     const pythonPath = path.join(__dirname, '..', '.claude', 'scripts', 'video_processor.py');
-
-    const args = url
-      ? ['url', url]
-      : ['process', videoPath];
-
+    const args = url ? ['url', url] : ['process', videoPath];
     const process = spawn(pythonCmd, [pythonPath, ...args]);
 
     let output = '';
@@ -550,13 +783,7 @@ app.post('/api/video/process', async (req, res) => {
     process.stdout.on('data', (data) => {
       output += data.toString();
       console.log(`Video processor: ${data}`);
-
-      // Broadcast progress updates
-      broadcast({
-        type: 'video-processing-progress',
-        nodeId,
-        message: data.toString()
-      });
+      broadcast({ type: 'video-processing-progress', nodeId, message: data.toString() });
     });
 
     process.stderr.on('data', (data) => {
@@ -568,24 +795,13 @@ app.post('/api/video/process', async (req, res) => {
       if (code === 0) {
         try {
           const result = JSON.parse(output);
-
-          // Broadcast completion
-          broadcast({
-            type: 'video-processing-complete',
-            nodeId,
-            result
-          });
-
+          broadcast({ type: 'video-processing-complete', nodeId, result });
           res.json({ success: true, result });
         } catch (e) {
           res.json({ success: true, output });
         }
       } else {
-        broadcast({
-          type: 'video-processing-error',
-          nodeId,
-          error: error || 'Processing failed'
-        });
+        broadcast({ type: 'video-processing-error', nodeId, error: error || 'Processing failed' });
         res.status(500).json({ error: error || 'Processing failed' });
       }
     });
@@ -596,8 +812,7 @@ app.post('/api/video/process', async (req, res) => {
   }
 });
 
-// API: List workflows
-app.get('/api/workflows', (req, res) => {
+app.get('/api/workflows', authMiddleware('workflow.view'), (req, res) => {
   const outputDir = path.join(__dirname, '..', 'output', 'workflows');
   const indexPath = path.join(outputDir, 'index.json');
 
@@ -607,10 +822,7 @@ app.get('/api/workflows', (req, res) => {
 
   try {
     const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
-
-    // Sort by created date (newest first)
     index.workflows.sort((a, b) => new Date(b.created) - new Date(a.created));
-
     res.json(index);
   } catch (error) {
     console.error('Failed to read workflow index:', error);
@@ -618,9 +830,11 @@ app.get('/api/workflows', (req, res) => {
   }
 });
 
-// API: Get workflow by name
-app.get('/api/workflow/:name', (req, res) => {
-  const { name } = req.params;
+app.get('/api/workflow/:name', authMiddleware('workflow.view'), (req, res) => {
+  const name = sanitizeWorkflowName(req.params.name);
+  if (!name) {
+    return res.status(400).json({ error: 'Invalid workflow name' });
+  }
   const outputDir = path.join(__dirname, '..', 'output', 'workflows');
   const workflowPath = path.join(outputDir, `${name}.json`);
 
@@ -637,9 +851,11 @@ app.get('/api/workflow/:name', (req, res) => {
   }
 });
 
-// API: Update workflow status
-app.post('/api/workflow/:name/status', (req, res) => {
-  const { name } = req.params;
+app.post('/api/workflow/:name/status', authMiddleware('workflow.execute'), (req, res) => {
+  const name = sanitizeWorkflowName(req.params.name);
+  if (!name) {
+    return res.status(400).json({ error: 'Invalid workflow name' });
+  }
   const { status, executed, executionResult } = req.body;
 
   const outputDir = path.join(__dirname, '..', 'output', 'workflows');
@@ -651,13 +867,9 @@ app.post('/api/workflow/:name/status', (req, res) => {
   }
 
   try {
-    // Update workflow file
     const workflow = JSON.parse(fs.readFileSync(workflowPath, 'utf-8'));
 
-    if (!workflow.metadata) {
-      workflow.metadata = {};
-    }
-
+    if (!workflow.metadata) workflow.metadata = {};
     if (status) workflow.metadata.status = status;
     if (executed !== undefined) workflow.metadata.executed = executed;
 
@@ -671,36 +883,27 @@ app.post('/api/workflow/:name/status', (req, res) => {
     }
 
     workflow.metadata.lastUpdated = new Date().toISOString();
-
     fs.writeFileSync(workflowPath, JSON.stringify(workflow, null, 2));
 
-    // Update index
     if (fs.existsSync(indexPath)) {
       const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
       const workflowEntry = index.workflows.find(w => w.name === name);
-
       if (workflowEntry) {
         if (status) workflowEntry.status = status;
         if (executed !== undefined) workflowEntry.executed = executed;
         workflowEntry.lastUpdated = workflow.metadata.lastUpdated;
       }
-
       fs.writeFileSync(indexPath, JSON.stringify(index, null, 2));
     }
 
     console.log(`📝 Workflow status updated: ${name} → ${status}`);
-
-    res.json({
-      success: true,
-      workflow: workflow.metadata
-    });
+    res.json({ success: true, workflow: workflow.metadata });
   } catch (error) {
     console.error('Failed to update workflow:', error);
     res.status(500).json({ error: 'Failed to update workflow' });
   }
 });
 
-// API: Get latest workflow
 app.get('/api/workflow/latest', (req, res) => {
   const latestPath = path.join(__dirname, '..', 'output', 'workflows', 'latest.json');
 
@@ -715,6 +918,98 @@ app.get('/api/workflow/latest', (req, res) => {
     console.error('Failed to read latest workflow:', error);
     res.status(500).json({ error: 'Failed to read workflow' });
   }
+});
+
+// ============================================
+// Authentication Endpoints
+// ============================================
+
+app.post('/api/auth/token', (req, res) => {
+  // Rate limiting
+  const clientIp = req.ip || req.socket.remoteAddress;
+  if (!authRateLimiter.check(clientIp)) {
+    return res.status(429).json({ error: 'Too many requests. Try again later.' });
+  }
+
+  // Require master key in production
+  if (process.env.JWT_SECRET) {
+    const masterKey = req.headers['x-api-master-key'] || req.body.masterKey;
+    if (!API_MASTER_KEY) {
+      return res.status(503).json({ error: 'API_MASTER_KEY not configured on server. Token generation disabled.' });
+    }
+    if (!masterKey || masterKey !== API_MASTER_KEY) {
+      return res.status(403).json({ error: 'Invalid or missing API master key' });
+    }
+  }
+
+  const { userId, username, role = 'agent', permissions } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'userId required' });
+  }
+
+  const payload = {
+    userId,
+    username: username || userId,
+    role,
+    permissions: permissions || ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.viewer
+  };
+
+  const token = jwtUtils.sign(payload, JWT_SECRET, JWT_EXPIRY);
+
+  console.log(`🔑 Token generated for user: ${username || userId} (${role})`);
+
+  res.json({
+    success: true,
+    token,
+    expiresIn: JWT_EXPIRY,
+    user: { userId, username: username || userId, role, permissions: payload.permissions }
+  });
+});
+
+app.post('/api/auth/verify', (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ error: 'Token required' });
+
+  if (revokedTokens.has(token)) return res.json({ valid: false, error: 'Token revoked' });
+
+  const payload = jwtUtils.verify(token, JWT_SECRET);
+  if (payload) {
+    res.json({
+      valid: true,
+      user: { userId: payload.userId, username: payload.username, role: payload.role, permissions: payload.permissions },
+      exp: payload.exp
+    });
+  } else {
+    res.json({ valid: false, error: 'Invalid or expired token' });
+  }
+});
+
+app.post('/api/auth/revoke', authMiddleware('admin.users'), (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ error: 'Token required' });
+
+  revokedTokens.add(token);
+  persistRevokedTokens();
+
+  clients.forEach(client => {
+    if (client.token === token) {
+      client.send(JSON.stringify({ type: 'token-revoked', message: 'Your token has been revoked', timestamp: Date.now() }));
+      client.close(4002, 'Token revoked');
+    }
+  });
+
+  console.log('🚫 Token revoked');
+  res.json({ success: true, message: 'Token revoked' });
+});
+
+app.get('/api/auth/status', (req, res) => {
+  res.json({
+    authEnabled: !!process.env.JWT_SECRET,
+    revokedTokenCount: revokedTokens.size,
+    authenticatedClients: Array.from(clients).filter(c => c.isAuthenticated).length,
+    timestamp: Date.now()
+  });
 });
 
 // Health check
@@ -768,6 +1063,12 @@ wsServer.listen(WS_PORT, () => {
 ║  GET  /api/workflow/:name        - Get workflow by name     ║
 ║  POST /api/workflow/:name/status - Update workflow status   ║
 ║                                                              ║
+║  Authentication:                                             ║
+║  POST /api/auth/token            - Generate JWT token       ║
+║  POST /api/auth/verify           - Verify token             ║
+║  POST /api/auth/revoke           - Revoke token             ║
+║  GET  /api/auth/status           - Auth status              ║
+║                                                              ║
 ║  System:                                                     ║
 ║  GET  /api/status                - Server status            ║
 ║  GET  /health                    - Health check             ║
@@ -781,6 +1082,12 @@ wsServer.listen(WS_PORT, () => {
 ║  ✅ Contextual workflow naming                               ║
 ║  ✅ Workflow execution tracking                              ║
 ║  ✅ n8n-style connection deletion                            ║
+║  ✅ JWT Authentication & RBAC                                ║
+║  ✅ Rate limiting on auth endpoints                          ║
+║  ✅ CORS origin whitelist                                    ║
+║  ✅ Path traversal protection                                ║
+║  ✅ Video URL validation                                     ║
+║  ✅ Revoked token persistence                                ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
   `);

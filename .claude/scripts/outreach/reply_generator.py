@@ -30,6 +30,66 @@ from inbox_reader import InboxReader
 load_dotenv(Path(__file__).parent.parent / '.env')
 console = Console()
 
+# Body size limits - optimized to minimize token usage
+# Context body: what flows into Claude Code context (keep small)
+MAX_CONTEXT_BODY_SIZE = 1500
+# Quote body: what gets quoted in the reply email itself
+MAX_QUOTE_BODY_SIZE = 500
+# Scan body: max we'll regex-scan for injection (cheap Python ops, no tokens)
+MAX_SCAN_BODY_SIZE = 50000
+
+# Patterns that may indicate prompt injection attempts
+PROMPT_INJECTION_PATTERNS = [
+    r'ignore\s+(all\s+)?previous\s+instructions',
+    r'ignore\s+(all\s+)?prior\s+instructions',
+    r'disregard\s+(all\s+)?previous',
+    r'you\s+are\s+now\s+a',
+    r'new\s+system\s+prompt',
+    r'system\s*:\s*you\s+are',
+    r'<\s*system\s*>',
+    r'</?\s*system\s*>',
+    r'forget\s+(all\s+)?previous',
+    r'override\s+(all\s+)?instructions',
+    r'act\s+as\s+(if\s+)?you\s+are',
+    r'pretend\s+you\s+are',
+    r'jailbreak',
+    r'DAN\s+mode',
+]
+
+import re
+
+_injection_re = re.compile('|'.join(PROMPT_INJECTION_PATTERNS), re.IGNORECASE)
+
+
+def sanitize_email_content(body: str, message_id: str = '') -> tuple:
+    """
+    Sanitize email body and return a token-efficient version for context.
+
+    Strategy:
+    - Regex scan runs on up to 50k chars (pure Python, zero token cost)
+    - Returns a truncated body (1500 chars) for Claude Code context
+    - This keeps API token usage minimal while scanning thoroughly
+
+    Returns:
+        Tuple of (context_body, flagged_patterns)
+    """
+    flagged = []
+
+    # Scan up to 50k chars for injection patterns (pure Python, no API cost)
+    scan_text = body[:MAX_SCAN_BODY_SIZE]
+    matches = _injection_re.findall(scan_text)
+    if matches:
+        flagged.append(f'prompt_injection_detected: {matches}')
+        console.print(f"[bold red]⚠ SECURITY: Prompt injection patterns detected in email {message_id}: {matches}[/bold red]")
+
+    # Truncate for context (this is what costs tokens)
+    context_body = body[:MAX_CONTEXT_BODY_SIZE]
+    if len(body) > MAX_CONTEXT_BODY_SIZE:
+        context_body += f'\n[... {len(body) - MAX_CONTEXT_BODY_SIZE} more chars truncated ...]'
+        flagged.append('body_truncated')
+
+    return context_body, flagged
+
 
 class ReplyGenerator:
     """
@@ -136,9 +196,14 @@ Best regards,
             sender_email = from_field
             sender_name = from_field.split('@')[0]
 
-        # Analyze content
+        # Analyze content (with sanitization)
         body = email.get('body', email.get('snippet', ''))
         subject = email.get('subject', '')
+
+        # Sanitize email body before processing
+        body, security_flags = sanitize_email_content(body, message_id)
+        if security_flags:
+            console.print(f"[yellow]⚠ Security flags: {security_flags}[/yellow]")
 
         # Detect tone and intent
         body_lower = body.lower()
@@ -212,7 +277,7 @@ Best regards,
         # Add original email if requested
         if include_original:
             reply_body += f"\n\n---\nOn {original_email['date']}, {original_email['from']} wrote:\n"
-            reply_body += f"> {original_email['body'][:500]}..."
+            reply_body += f"> {original_email['body'][:MAX_QUOTE_BODY_SIZE]}..."
 
         # Generate subject
         orig_subject = original_email['subject']
