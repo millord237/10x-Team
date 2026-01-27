@@ -191,6 +191,15 @@ You can now use all skills!
         if exa_api_key:
             env_vars["EXA_API_KEY"] = exa_api_key
 
+        # LinkedIn Sales Navigator
+        print(f"\n{BOLD}{BLUE}LinkedIn Sales Navigator API (Optional):{RESET}")
+        print("For API-based lead search. Requires Sales Navigator contract.")
+        print("Get from: https://developer.linkedin.com/")
+
+        linkedin_token = input(f"{YELLOW}LINKEDIN_SALES_NAV_TOKEN:{RESET} ").strip()
+        if linkedin_token:
+            env_vars["LINKEDIN_SALES_NAV_TOKEN"] = linkedin_token
+
         # WebSocket configuration
         print(f"\n{BOLD}{BLUE}WebSocket Configuration:{RESET}")
         websocket_port = input(f"{YELLOW}WEBSOCKET_PORT (default: 3001):{RESET} ").strip()
@@ -214,6 +223,42 @@ You can now use all skills!
 
         return True
 
+    def setup_mcp_config(self):
+        """Generate .claude/.mcp.json from .mcp.json.example with user's API keys"""
+        mcp_example = self.claude_dir / ".mcp.json.example"
+        mcp_target = self.claude_dir / ".mcp.json"
+
+        if mcp_target.exists():
+            print_info("MCP config already exists, skipping generation.")
+            return True
+
+        if not mcp_example.exists():
+            print_error("MCP template (.mcp.json.example) not found.")
+            return False
+
+        try:
+            content = mcp_example.read_text()
+
+            # Read EXA_API_KEY from .env if available
+            exa_key = ""
+            if self.env_file.exists():
+                for line in self.env_file.read_text().splitlines():
+                    if line.startswith("EXA_API_KEY="):
+                        exa_key = line.split("=", 1)[1].strip()
+                        break
+
+            # If key found, substitute it; otherwise keep the ${EXA_API_KEY} placeholder
+            # (Claude Code resolves env vars at runtime anyway)
+            if exa_key and exa_key != "your_exa_api_key_here":
+                content = content.replace("${EXA_API_KEY}", exa_key)
+
+            mcp_target.write_text(content)
+            print_success(f"Generated MCP config: {mcp_target}")
+            return True
+        except Exception as e:
+            print_error(f"Failed to generate MCP config: {e}")
+            return False
+
     def create_required_directories(self):
         """Create required directories"""
         print_info("Creating required directories...")
@@ -236,7 +281,7 @@ You can now use all skills!
         print_header("10x-Outreach-Skill Auto Setup")
         print(f"{BOLD}Welcome! Let's set up your 10x-Outreach-Skill environment.{RESET}\n")
 
-        total_steps = 5
+        total_steps = 6
 
         # Step 1: Install Python dependencies
         print_step(1, total_steps, "Installing Python Dependencies")
@@ -260,8 +305,12 @@ You can now use all skills!
             print_error("Setup failed at environment configuration")
             return False
 
-        # Step 5: Mark setup complete
-        print_step(5, total_steps, "Finalizing Setup")
+        # Step 5: Generate MCP config
+        print_step(5, total_steps, "Generating MCP Configuration")
+        self.setup_mcp_config()
+
+        # Step 6: Mark setup complete
+        print_step(6, total_steps, "Finalizing Setup")
         self.mark_setup_complete()
 
         print_header("Setup Complete!")

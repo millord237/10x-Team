@@ -235,6 +235,42 @@ class LinkedInAdapter:
                 details
             )
 
+    def api_search(self, query: str, filters: Dict = None, count: int = 10) -> Dict:
+        """
+        Search for leads using Sales Navigator API when token is available.
+        Falls back to browser extension automation otherwise.
+
+        Args:
+            query: Search keywords (e.g., "CTO", "VP Marketing")
+            filters: Optional dict with title, company, location, industry, seniority
+            count: Max results (default 10)
+
+        Returns:
+            Dict with success status and results
+        """
+        try:
+            from linkedin_sales_navigator import LinkedInSalesNavigator
+            client = LinkedInSalesNavigator()
+
+            if client.is_configured:
+                result = client.search_leads(query, filters=filters, count=count)
+                if result.get("success"):
+                    result["source"] = "sales_navigator_api"
+                    return result
+                # If API fails, fall through to browser fallback
+
+        except ImportError:
+            pass
+
+        # Fallback: return guidance to use browser extension
+        return {
+            "success": False,
+            "source": "fallback",
+            "error": "Sales Navigator API not available. "
+                     "Use browser extension or set LINKEDIN_SALES_NAV_TOKEN in .env",
+            "suggestion": "Use /linkedin view or Exa MCP for LinkedIn search instead",
+        }
+
     def get_remaining_limits(self, user_id: str = "default") -> Dict[str, int]:
         """Get remaining action limits for today"""
         if self.rate_limiter:

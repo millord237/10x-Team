@@ -52,6 +52,19 @@ PLATFORM_LIMITS = {
         "cool_down_after_burst": 2400,
         "active_hours": {"start": 9, "end": 21}
     },
+    "linkedin_api": {
+        "search_leads_per_day": 25,
+        "search_accounts_per_day": 25,
+        "get_lead_per_day": 100,
+        "get_account_per_day": 100,
+        "get_saved_leads_per_day": 50,
+        "save_lead_per_day": 50,
+        "min_delay_seconds": 2,
+        "max_delay_seconds": 10,
+        "hourly_burst_limit": 30,
+        "cool_down_after_burst": 600,
+        "active_hours": {"start": 0, "end": 24}
+    },
     "gmail": {
         "emails_per_day": 100,
         "emails_per_hour": 20,
@@ -84,6 +97,14 @@ ACTION_LIMITS = {
         "dm": "dms_per_day",
         "like": "likes_per_day",
         "comment": "comments_per_day"
+    },
+    "linkedin_api": {
+        "search_leads": "search_leads_per_day",
+        "search_accounts": "search_accounts_per_day",
+        "get_lead": "get_lead_per_day",
+        "get_account": "get_account_per_day",
+        "get_saved_leads": "get_saved_leads_per_day",
+        "save_lead": "save_lead_per_day"
     },
     "gmail": {
         "send": "emails_per_day",

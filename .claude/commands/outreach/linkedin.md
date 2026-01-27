@@ -49,6 +49,7 @@ Comment on a post:
 - `--template <name>` - Use a template from templates/linkedin/
 - `--user <id>` - Team member ID (default: "default")
 - `--dry-run` - Preview without executing
+- `--api` - Use Sales Navigator API instead of browser extension (requires LINKEDIN_SALES_NAV_TOKEN)
 
 ## Templates
 
@@ -82,6 +83,25 @@ Comment on a post:
 /linkedin comment https://linkedin.com/posts/abc123 "Brilliant perspective on AI!"
 ```
 
+## Sales Navigator API Search
+
+When `--api` flag is used or `LINKEDIN_SALES_NAV_TOKEN` is set, searches use the Sales Navigator REST API:
+
+```
+/linkedin search --api --query "CTO" --location "San Francisco" --industry "Technology"
+/linkedin search --api --query "VP Marketing" --company "Stripe" --count 25
+/linkedin search --api --query "Founder" --seniority "CXO" --location "New York"
+```
+
+**API Search Filters:** `--title`, `--company`, `--location`, `--industry`, `--seniority`, `--count`
+
+**Account Search:**
+```
+/linkedin accounts --query "fintech startups" --industry "Financial Services"
+```
+
+If no API token is configured, falls back to browser extension automation.
+
 ## Rate Limits
 
 - Connections: 20/day
@@ -90,6 +110,11 @@ Comment on a post:
 - Likes: 100/day
 - Comments: 25/day
 
+### Sales Navigator API Limits
+- Lead searches: 25/day
+- Account searches: 25/day
+- Lead lookups: 100/day
+
 ## Invokes Skill
 
-This command uses the `linkedin-adapter` skill.
+This command uses the `linkedin-adapter` skill and optionally `linkedin-sales-navigator` for API access.

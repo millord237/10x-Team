@@ -457,6 +457,31 @@ class DiscoveryEngine:
 
         return people
 
+    def parse_sales_navigator_results(self, leads_data: List[Dict]) -> List[Dict]:
+        """
+        Parse LinkedIn Sales Navigator API results into person dictionaries.
+
+        Accepts the output of LinkedInSalesNavigator.leads_to_discovered_persons()
+        or raw lead dicts with keys: name, title, company, location, linkedin_url.
+
+        Returns list of dicts compatible with add_person().
+        """
+        people = []
+        for item in leads_data:
+            person = {
+                'name': item.get('name', ''),
+                'title': item.get('title', ''),
+                'company': item.get('company', item.get('company_name', '')),
+                'location': item.get('location', ''),
+                'linkedin_url': item.get('linkedin_url', ''),
+                'bio': item.get('bio', ''),
+                'tags': list(set(
+                    item.get('tags', []) + ['sales_navigator']
+                )),
+            }
+            people.append(person)
+        return people
+
     def parse_exa_company_results(self, exa_response: Dict, company_name: str) -> Dict:
         """
         Parse Exa AI company research results.

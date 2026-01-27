@@ -71,5 +71,7 @@ prompt.md
 # Gemini CLI settings (symlink to .claude/.mcp.json)
 .gemini/settings.json
 .claude/settings.bak.json
+.claude/.mcp.json
+.claude/settings.local.json
 
 assets/videos/long
